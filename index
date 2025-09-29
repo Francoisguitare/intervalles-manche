@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entraîneur d'Intervalles pour Guitare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        .fretboard { background: linear-gradient(90deg, #6b4625, #5a3b1e); border: 2px solid #3a2811; }
+        .fret-line { background-color: #c5c5c5; }
+        .fret-nut { background-color: #f0ebe0; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .string { background-color: #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: opacity 0.3s ease; }
+        .note-target:hover::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); width: 32px; height: 32px;
+            background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; opacity: 1;
+        }
+        .note-dot { transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 1px solid rgba(0,0,0,0.2); }
+        .fret-marker { background-color: rgba(0, 0, 0, 0.2); }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-highlight { animation: pulse-glow 1.5s infinite; }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 50% { box-shadow: 0 0 8px 3px rgba(59, 130, 246, 0); } }
+        .life { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .life-lost { transform: scale(0); opacity: 0; }
+        .modal-enter { animation: modal-fade-in 0.3s ease-out forwards; }
+        .modal-content-enter { animation: modal-zoom-in 0.3s ease-out forwards; }
+        @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modal-zoom-in { from { transform: scale(0.8); } to { transform: scale(1); } }
+        .answer-btn.correct { background-color: #22c55e !important; border-color: #16a34a !important; }
+        .answer-btn.incorrect { background-color: #ef4444 !important; border-color: #dc2626 !important; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="main-menu" class="w-full max-w-md mx-auto text-center">
+        <h1 class="text-3xl md:text-4xl font-bold text-sky-400 mb-2">Entraîneur d'Intervalles</h1>
+        <p class="text-gray-400 mt-2 mb-8">Un outil pour les élèves de la <span class="font-semibold text-sky-300">Guitare Impro Académie</span></p>
+        <div class="space-y-4">
+            <button data-action="open-challenge-menu" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 px-6 rounded-lg transition-colors duration-200 shadow-lg text-xl">
+                🏆 Mode Challenge (Reconnaissance)
+            </button>
+            <button id="start-review-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-6 rounded-lg transition-colors duration-200 shadow-lg text-xl">
+                📚 Mode Révision (Exploration)
+            </button>
+        </div>
+    </div>
+
+    <div id="challenge-selection-menu" class="hidden w-full max-w-md mx-auto text-center">
+        <h1 class="text-3xl md:text-4xl font-bold text-sky-400 mb-8">Choisissez votre Challenge</h1>
+        <div class="space-y-4">
+            <button data-challenge="bronze" class="challenge-btn w-full bg-yellow-700 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-lg transition-colors duration-200 shadow-lg text-xl">
+                🥉 Bronze <span class="block text-sm font-normal">10 bonnes réponses / 3 vies</span>
+            </button>
+            <button data-challenge="silver" class="challenge-btn w-full bg-gray-400 hover:bg-gray-300 text-gray-800 font-bold py-4 px-6 rounded-lg transition-colors duration-200 shadow-lg text-xl">
+                🥈 Argent <span class="block text-sm font-normal">20 bonnes réponses / 3 vies</span>
+            </button>
+            <button data-challenge="gold" class="challenge-btn w-full bg-yellow-500 hover:bg-yellow-400 text-gray-800 font-bold py-4 px-6 rounded-lg transition-colors duration-200 shadow-lg text-xl">
+                🥇 Or <span class="block text-sm font-normal">30 bonnes réponses / 3 vies</span>
+            </button>
+        </div>
+        <button data-action="back-to-main" class="mt-8 text-sky-400 hover:text-sky-300">Retour</button>
+    </div>
+
+    <div id="app-container" class="hidden w-full max-w-6xl mx-auto bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
+        
+        <header class="text-center mb-4 flex justify-between items-center">
+             <button id="back-button" class="text-sky-400 hover:text-sky-300 text-sm"></button>
+            <h1 id="app-title" class="text-2xl md:text-3xl font-bold text-sky-400"></h1>
+            <div class="w-1/4"></div>
+        </header>
+
+        <div id="game-ui-bar" class="hidden flex justify-between items-center mb-4 p-2 bg-gray-900/50 rounded-lg">
+            <div id="score-display" class="font-bold text-lg text-yellow-400"></div>
+            <div id="timer-display" class="font-bold text-lg text-sky-400"></div>
+            <div id="lives-display" class="flex gap-2"></div>
+        </div>
+        
+        <div id="review-section" class="hidden text-center bg-gray-900/50 rounded-lg p-3 mb-4">
+             <p id="review-instructions" class="text-gray-300">Cliquez sur une note du manche pour la définir comme tonique.</p>
+        </div>
+
+        <div class="relative flex justify-end mb-4">
+            <button id="settings-toggle-btn" class="p-2 bg-gray-700/50 hover:bg-gray-600 rounded-full">
+                 <svg class="w-6 h-6 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+        </div>
+
+        <div id="guitar-neck" class="relative overflow-x-auto pb-4"></div>
+        
+        <div id="training-section-controls" class="hidden">
+             <div class="bg-gray-700 rounded-lg p-4 mt-4 flex flex-col gap-4">
+                 <div class="flex flex-col md:flex-row items-center justify-between">
+                     <div id="question-panel" class="text-center md:text-left flex-1 mb-4 md:mb-0">
+                         <p id="question-title" class="text-2xl font-bold text-yellow-400"></p>
+                     </div>
+                     <div id="feedback-panel" class="text-xl font-semibold h-8 flex items-center justify-center gap-4">
+                         <button id="replay-sound-btn" class="bg-blue-600 hover:bg-blue-500 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                         </button>
+                         <p id="feedback-message" class="flex-1 text-center"></p>
+                     </div>
+                     <button id="new-question-btn" class="w-full md:w-auto bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 shadow-lg">
+                         Question Suivante
+                     </button>
+                 </div>
+                  <div id="answer-buttons" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 modal-enter">
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-lg modal-content-enter">
+            <h2 class="text-2xl font-bold text-sky-400 mb-6">Réglages des Intervalles</h2>
+            <div id="interval-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6"></div>
+            <div class="flex gap-4 mb-6">
+                <button id="select-all-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">Tout sélectionner</button>
+                <button id="deselect-all-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">Tout désélectionner</button>
+            </div>
+            <button id="close-settings-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-lg mt-8">Fermer</button>
+        </div>
+    </div>
+
+    <div id="end-game-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 modal-enter">
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-md text-center modal-content-enter">
+            <h2 id="end-game-title" class="text-4xl font-bold mb-4"></h2>
+            <p id="end-game-message" class="text-gray-300 mb-8"></p>
+            <div id="end-game-buttons" class="flex flex-col gap-4"></div>
+        </div>
+    </div>
+
+
+    <footer class="mt-8 text-center text-gray-500 text-sm"><p>Créé avec passion pour aider les guitaristes à progresser.</p></footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Constants & Config ---
+            const NUM_STRINGS = 6, NUM_FRETS = 15;
+            const SEARCH_ZONE_RADIUS = 4;
+            const STRING_SEARCH_RADIUS = 2;
+            const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+            const TUNING_SEMITONES_FROM_C0 = [40, 45, 50, 55, 59, 64];
+            const INTERVALS = {'2m': 1, '2M': 2, '3m': 3, '3M': 4, '4J': 5, '5dim': 6, '5J': 7, '6m': 8, '6M': 9, '7m': 10, '7M': 11, '8J': 12};
+            const CHALLENGES = {
+                bronze: { name: 'Bronze 🥉', goal: 10, lives: 3, next: 'silver' },
+                silver: { name: 'Argent 🥈', goal: 20, lives: 3, next: 'gold' },
+                gold:   { name: 'Or 🥇', goal: 30, lives: 3, next: null }
+            };
+            const intervalKeys = Object.keys(INTERVALS);
+
+            // --- DOM Elements ---
+            const el = {};
+            const ids = ['main-menu', 'challenge-selection-menu', 'app-container', 'guitar-neck', 'new-question-btn', 'settings-modal', 'end-game-modal', 'app-title', 'lives-display', 'score-display', 'back-button', 'game-ui-bar', 'review-section', 'training-section-controls', 'question-title', 'feedback-message', 'replay-sound-btn', 'end-game-title', 'end-game-message', 'end-game-buttons', 'review-instructions', 'answer-buttons', 'interval-checkboxes', 'settings-toggle-btn', 'close-settings-btn', 'select-all-btn', 'deselect-all-btn', 'timer-display'];
+            ids.forEach(id => {
+                const camelCaseId = id.replace(/-([a-z])/g, g => g[1].toUpperCase());
+                el[camelCaseId] = document.getElementById(id);
+            });
+            
+            // --- State ---
+            let rootNote, targetNote, correctInterval;
+            let gameInProgress = false, soundReady = false, synth;
+            let activeIntervalKeys = [...intervalKeys];
+            let currentNoteDisplay;
+            let lives, score, currentChallenge, currentMode;
+            let timerInterval, timeLeft;
+
+            // --- Sound ---
+            const initSound = async () => { if (!soundReady) { try { await Tone.start(); synth = new Tone.FMSynth({ harmonicity: 3.01, modulationIndex: 14, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.4 } }).toDestination(); soundReady = true; } catch (e) { console.error("Could not start audio.", e); } } };
+            const getNoteWithOctave = (s, f) => { const total = TUNING_SEMITONES_FROM_C0[s] + f; return NOTES[total % 12] + Math.floor(total / 12); };
+            const playInterval = () => { if (soundReady && rootNote && targetNote) { const rootOctave = getNoteWithOctave(rootNote.string, rootNote.fret); const targetOctave = getNoteWithOctave(targetNote.string, targetNote.fret); synth.triggerAttackRelease(rootOctave, "8n"); synth.triggerAttackRelease(targetOctave, "8n", "+4n"); } };
+
+            // --- UI & Game Flow ---
+            const showScreen = (screen) => {
+                el.mainMenu.classList.add('hidden');
+                el.challengeSelectionMenu.classList.add('hidden');
+                el.appContainer.classList.add('hidden');
+                if (screen === 'main') el.mainMenu.classList.remove('hidden');
+                else if (screen === 'challenge') el.challengeSelectionMenu.classList.remove('hidden');
+                else if (screen === 'app') el.appContainer.classList.remove('hidden');
+            };
+
+            const startChallenge = (challengeKey) => {
+                currentMode = 'challenge';
+                currentChallenge = { ...CHALLENGES[challengeKey], key: challengeKey };
+                lives = currentChallenge.lives;
+                score = 0;
+                el.appTitle.textContent = `Challenge ${currentChallenge.name}`;
+                updateScoreDisplay();
+                updateLivesDisplay();
+                el.gameUiBar.classList.remove('hidden');
+                el.trainingSectionControls.classList.remove('hidden');
+                el.reviewSection.classList.add('hidden');
+                el.backButton.textContent = '< Changer de Challenge';
+                el.backButton.dataset.action = 'back-to-challenge-menu';
+                
+                if (timerInterval) clearInterval(timerInterval);
+                
+                let challengeTime = 0;
+                if (challengeKey === 'bronze') {
+                    challengeTime = 180;
+                } else if (challengeKey === 'silver') {
+                    challengeTime = 180;
+                } else if (challengeKey === 'gold') {
+                    challengeTime = 120;
+                }
+
+                if (challengeTime > 0) {
+                    timeLeft = challengeTime;
+                    el.timerDisplay.classList.remove('hidden');
+                    el.timerDisplay.textContent = `Temps : ${timeLeft}s`;
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        el.timerDisplay.textContent = `Temps : ${timeLeft}s`;
+                        if (timeLeft <= 0) {
+                            endGame(false, 'timeout');
+                        }
+                    }, 1000);
+                } else {
+                    el.timerDisplay.classList.add('hidden');
+                }
+
+                showScreen('app');
+                gameInProgress = true;
+                newQuestion();
+            };
+
+            const startReviewMode = () => {
+                currentMode = 'review';
+                rootNote = null;
+                el.appTitle.textContent = 'Mode Révision';
+                el.gameUiBar.classList.add('hidden');
+                el.trainingSectionControls.classList.add('hidden');
+                el.reviewSection.classList.remove('hidden');
+                el.reviewInstructions.textContent = 'Cliquez sur une note du manche pour la définir comme tonique.';
+                el.backButton.textContent = '< Retour au Menu';
+                el.backButton.dataset.action = 'back-to-main';
+                clearBoard();
+                showScreen('app');
+            };
+            
+            const updateScoreDisplay = () => { if(el.scoreDisplay && currentChallenge) el.scoreDisplay.textContent = `Score : ${score} / ${currentChallenge.goal}`; };
+            const updateLivesDisplay = () => {
+                if(!el.livesDisplay || !currentChallenge) return;
+                el.livesDisplay.innerHTML = '';
+                for (let i = 0; i < currentChallenge.lives; i++) {
+                    const lifeEl = document.createElement('div');
+                    lifeEl.className = 'life text-2xl';
+                    lifeEl.textContent = '❤️';
+                    if (i >= lives) lifeEl.classList.add('life-lost');
+                    el.livesDisplay.appendChild(lifeEl);
+                }
+            };
+            
+            // --- Game Logic ---
+            const getNoteValue = (s, f) => (TUNING_SEMITONES_FROM_C0[s] + f) % 12;
+            const findValidTarget = (root) => {
+                const possibleTargets = [];
+                const minFret = Math.max(0, root.fret - SEARCH_ZONE_RADIUS);
+                const maxFret = Math.min(NUM_FRETS, root.fret + SEARCH_ZONE_RADIUS);
+                const stringsToCheck = [];
+                for (let i = -STRING_SEARCH_RADIUS; i <= STRING_SEARCH_RADIUS; i++) {
+                    const stringIndex = root.string + i;
+                    if (stringIndex >= 0 && stringIndex < NUM_STRINGS) stringsToCheck.push(stringIndex);
+                }
+                for (const s of stringsToCheck) {
+                    for (let f = minFret; f <= maxFret; f++) {
+                        if (s === root.string && f === root.fret) continue;
+                        let intervalValue = (getNoteValue(s, f) - getNoteValue(root.string, root.fret) + 12) % 12;
+                        if (intervalValue === 0) intervalValue = 12;
+                        if (activeIntervalKeys.some(key => INTERVALS[key] === intervalValue)) {
+                            possibleTargets.push({ string: s, fret: f });
+                        }
+                    }
+                }
+                return possibleTargets.length > 0 ? possibleTargets[Math.floor(Math.random() * possibleTargets.length)] : null;
+            };
+
+            const newQuestion = () => {
+                if (!gameInProgress || activeIntervalKeys.length === 0) return;
+                clearBoard();
+                el.feedbackMessage.textContent = '';
+                el.newQuestionBtn.classList.add('btn-disabled');
+                el.newQuestionBtn.classList.remove('btn-highlight');
+                currentNoteDisplay = Math.random() < 0.5 ? NOTES_SHARP : NOTES_FLAT;
+                let potentialRootNote, potentialTargetNote;
+                let retries = 0;
+                while (!potentialTargetNote && retries < 100) {
+                    const randomString = Math.floor(Math.random() * NUM_STRINGS);
+                    const randomFret = Math.floor(Math.random() * (NUM_FRETS - 8)) + 4;
+                    potentialRootNote = { string: randomString, fret: randomFret };
+                    potentialTargetNote = findValidTarget(potentialRootNote);
+                    retries++;
+                }
+                if (!potentialTargetNote) {
+                    // Changed alert to a console message and UI feedback to avoid blocking UI.
+                    console.error("Impossible de générer une question avec les intervalles sélectionnés.");
+                    el.questionTitle.textContent = "Erreur: Pas assez d'intervalles!";
+                    return;
+                }
+                rootNote = potentialRootNote;
+                targetNote = potentialTargetNote;
+                const rootNoteValue = getNoteValue(rootNote.string, rootNote.fret);
+                const targetNoteValue = getNoteValue(targetNote.string, targetNote.fret);
+                let intervalValue = (targetNoteValue - rootNoteValue + 12) % 12;
+                if (intervalValue === 0) intervalValue = 12;
+                correctInterval = Object.keys(INTERVALS).find(key => INTERVALS[key] === intervalValue);
+                el.questionTitle.textContent = `Quel est cet intervalle ?`;
+                placeNote(rootNote.string, rootNote.fret, 'F', { note: currentNoteDisplay[rootNoteValue] });
+                placeNote(targetNote.string, targetNote.fret, 'T');
+                generateAnswerChoices();
+                playInterval();
+            };
+
+            const generateAnswerChoices = () => {
+                const distractors = activeIntervalKeys.filter(key => key !== correctInterval).sort(() => 0.5 - Math.random()).slice(0, 3);
+                const choices = [correctInterval, ...distractors].sort(() => 0.5 - Math.random());
+                el.answerButtons.innerHTML = '';
+                choices.forEach(choice => {
+                    const btn = createButton(choice, 'answer-btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors', () => handleAnswerClick(choice));
+                    btn.dataset.interval = choice;
+                    el.answerButtons.appendChild(btn);
+                });
+            };
+            
+            const handleAnswerClick = (selectedInterval) => {
+                if (!gameInProgress) return;
+                gameInProgress = false;
+                const allButtons = el.answerButtons.querySelectorAll('button');
+                allButtons.forEach(btn => btn.disabled = true);
+                const correctBtn = el.answerButtons.querySelector(`[data-interval='${correctInterval}']`);
+                if (selectedInterval === correctInterval) {
+                    score++;
+                    updateScoreDisplay();
+                    el.feedbackMessage.textContent = 'Parfait !';
+                    el.feedbackMessage.className = 'text-green-400 font-semibold flex-1 text-center';
+                    if (correctBtn) correctBtn.classList.add('correct');
+                    if (score >= currentChallenge.goal) {
+                        setTimeout(() => endGame(true), 1000);
+                        return; // Exit early to not activate the "next question" button
+                    }
+                } else {
+                    lives--;
+                    updateLivesDisplay();
+                    el.feedbackMessage.textContent = `Incorrect... C'était une ${correctInterval}`;
+                    el.feedbackMessage.className = 'text-red-400 font-semibold flex-1 text-center';
+                    const selectedBtn = el.answerButtons.querySelector(`[data-interval='${selectedInterval}']`);
+                    if (selectedBtn) selectedBtn.classList.add('incorrect');
+                    if (correctBtn) correctBtn.classList.add('correct');
+                     if (lives <= 0) {
+                        setTimeout(() => endGame(false), 1000);
+                        return; // Exit early
+                    }
+                }
+                if (lives > 0 && score < currentChallenge.goal) {
+                    el.newQuestionBtn.classList.remove('btn-disabled');
+                    el.newQuestionBtn.classList.add('btn-highlight');
+                }
+            };
+
+            const handleFretClick = (e) => {
+                if (currentMode === 'review' && e.target.matches('.note-target')) {
+                    const string = parseInt(e.target.dataset.string);
+                    const fret = parseInt(e.target.dataset.fret);
+                    handleReviewClick(string, fret);
+                }
+            };
+            
+            const handleReviewClick = (string, fret) => {
+                clearBoard();
+                currentNoteDisplay = Math.random() < 0.5 ? NOTES_SHARP : NOTES_FLAT;
+                rootNote = { string, fret };
+                const rootNoteValue = getNoteValue(string, fret);
+                placeNote(string, fret, 'F', { note: currentNoteDisplay[rootNoteValue] });
+                el.reviewInstructions.textContent = `Tonique : ${currentNoteDisplay[rootNoteValue]}.`;
+                displayReviewIntervals();
+            };
+
+            const displayReviewIntervals = () => {
+                if (!rootNote) return;
+                clearBoard(); // Clear previous intervals before drawing new ones
+                const rootNoteValue = getNoteValue(rootNote.string, rootNote.fret);
+                placeNote(rootNote.string, rootNote.fret, 'F', { note: currentNoteDisplay[rootNoteValue] }); // Re-place root note
+
+                activeIntervalKeys.forEach(intervalKey => {
+                    const intervalValue = INTERVALS[intervalKey];
+                    const targetNoteValue = (rootNoteValue + intervalValue) % 12;
+                    const minFret = Math.max(0, rootNote.fret - SEARCH_ZONE_RADIUS);
+                    const maxFret = Math.min(NUM_FRETS, rootNote.fret + SEARCH_ZONE_RADIUS);
+                    const stringsToCheck = [];
+                    for (let i = -STRING_SEARCH_RADIUS; i <= STRING_SEARCH_RADIUS; i++) {
+                        const s_idx = rootNote.string + i;
+                        if (s_idx >= 0 && s_idx < NUM_STRINGS) stringsToCheck.push(s_idx);
+                    }
+                    for (const s of stringsToCheck) {
+                        for (let f = minFret; f <= maxFret; f++) {
+                            if (s === rootNote.string && f === rootNote.fret) continue;
+                            if (getNoteValue(s, f) === targetNoteValue) {
+                                placeNote(s, f, 'I', { interval: intervalKey });
+                            }
+                        }
+                    }
+                });
+            };
+            
+            const endGame = (isWin, reason = null) => {
+                if (timerInterval) clearInterval(timerInterval);
+                gameInProgress = false;
+                el.endGameButtons.innerHTML = '';
+                if (isWin) {
+                    el.endGameTitle.textContent = `Challenge ${currentChallenge.name} Réussi !`;
+                    el.endGameTitle.className = 'text-4xl font-bold mb-4 text-green-400';
+                    el.endGameMessage.innerHTML = `Félicitations ! Vous avez réussi ce challenge.<br><div class="mt-4 flex items-center justify-center text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg> <span>prendre en photo et envoyer par whatsapp pour valider</span></div>`;
+                    if (currentChallenge.next) {
+                        const nextBtn = createButton(`Passer au Challenge ${CHALLENGES[currentChallenge.next].name}`, 'bg-sky-600', () => { el.endGameModal.classList.add('hidden'); startChallenge(currentChallenge.next); });
+                        el.endGameButtons.appendChild(nextBtn);
+                    }
+                } else {
+                    el.endGameTitle.textContent = 'Game Over';
+                    el.endGameTitle.className = 'text-4xl font-bold mb-4 text-red-400';
+                    if (reason === 'timeout') {
+                        el.endGameMessage.textContent = `Temps écoulé ! Vous avez trouvé ${score} / ${currentChallenge.goal} intervalles.`;
+                    } else {
+                        el.endGameMessage.textContent = `Vous avez trouvé ${score} / ${currentChallenge.goal} intervalles. Entraînez-vous encore !`;
+                    }
+                    const retryBtn = createButton('Réessayer ce Challenge', 'bg-sky-600', () => { el.endGameModal.classList.add('hidden'); startChallenge(currentChallenge.key); });
+                    el.endGameButtons.appendChild(retryBtn);
+                }
+                const menuBtn = createButton('Retour au Menu des Challenges', 'bg-gray-600', () => { el.endGameModal.classList.add('hidden'); showScreen('challenge'); });
+                el.endGameButtons.appendChild(menuBtn);
+                el.endGameModal.classList.remove('hidden');
+            };
+
+            // --- Helper functions ---
+            function createButton(text, classes, onClick) {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.className = `${classes} hover:opacity-90 text-white font-bold py-3 px-6 rounded-lg w-full`;
+                btn.onclick = onClick;
+                return btn;
+            }
+            function placeNote(s, f, type, data = {}) {
+                const fretWrapper = el.guitarNeck.querySelector(`[data-string='${s}'][data-fret='${f}']`).parentElement;
+                removeNote(s,f);
+                const noteDot = document.createElement('div');
+                let bgColor = '', noteText = '';
+                if (type === 'F') { bgColor = 'bg-sky-500'; noteText = data.note; }
+                else if (type === 'T') { bgColor = 'bg-green-500'; noteText = '?'; }
+                else if (type === 'I') { bgColor = 'bg-green-500'; noteText = data.interval; }
+                else { bgColor = 'bg-red-500'; noteText = 'X'; }
+                noteDot.className = `note-dot w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm z-30 ${bgColor} text-white`;
+                noteDot.textContent = noteText;
+                fretWrapper.appendChild(noteDot);
+            }
+            function removeNote(s, f) { const noteEl = el.guitarNeck.querySelector(`[data-string='${s}'][data-fret='${f}']`).parentElement.querySelector('.note-dot'); if (noteEl) noteEl.remove(); }
+            function clearBoard() { el.guitarNeck.querySelectorAll('.note-dot').forEach(n => n.remove()); }
+            function drawFretboard() {
+                const neckContainer = document.createElement('div');
+                neckContainer.className = 'fretboard relative flex flex-col-reverse p-2 rounded-lg';
+                const fretMarkers = [3, 5, 7, 9, 12, 15];
+                const fretMarkersContainer = document.createElement('div');
+                fretMarkersContainer.className = 'absolute inset-0 flex items-center justify-around z-0';
+                for (let j = 0; j <= NUM_FRETS; j++) {
+                    const markerContainer = document.createElement('div');
+                    markerContainer.className = 'w-full h-full flex flex-col items-center justify-center';
+                    if (fretMarkers.includes(j)) {
+                        if (j === 12) {
+                            const m1 = document.createElement('div'); m1.className = 'w-3 h-3 md:w-4 md:h-4 rounded-full fret-marker mb-4';
+                            const m2 = document.createElement('div'); m2.className = 'w-3 h-3 md:w-4 md:h-4 rounded-full fret-marker mt-4';
+                            markerContainer.append(m1, m2);
+                        } else {
+                            const marker = document.createElement('div'); marker.className = 'w-3 h-3 md:w-4 md:h-4 rounded-full fret-marker';
+                            markerContainer.appendChild(marker);
+                        }
+                    }
+                    fretMarkersContainer.appendChild(markerContainer);
+                }
+                neckContainer.appendChild(fretMarkersContainer);
+                for (let i = 0; i < NUM_STRINGS; i++) {
+                    const stringEl = document.createElement('div');
+                    stringEl.className = 'string-container relative flex items-center h-10';
+                    stringEl.dataset.stringId = i;
+                    const stringLine = document.createElement('div');
+                    stringLine.className = 'string absolute left-0 right-0 z-10';
+                    stringLine.style.height = `${(i * 0.5) + 1.5}px`;
+                    stringEl.appendChild(stringLine);
+                    for (let j = 0; j < NUM_FRETS + 1; j++) {
+                        const fretContainer = document.createElement('div');
+                        fretContainer.className = 'fret-wrapper relative flex-1 h-full flex justify-center items-center';
+                        if (j === 0) {
+                            const nut = document.createElement('div'); nut.className = 'fret-nut absolute right-0 top-0 bottom-0'; nut.style.width = '6px';
+                            fretContainer.appendChild(nut);
+                        } else {
+                            const fretLine = document.createElement('div'); fretLine.className = 'fret-line absolute right-0 top-0 bottom-0'; fretLine.style.width = '3px';
+                            fretContainer.appendChild(fretLine);
+                        }
+                        const clickableArea = document.createElement('div');
+                        clickableArea.className = 'note-target absolute inset-0 z-20 cursor-pointer rounded-full';
+                        clickableArea.dataset.string = i; clickableArea.dataset.fret = j;
+                        fretContainer.appendChild(clickableArea);
+                        stringEl.appendChild(fretContainer);
+                    }
+                    neckContainer.appendChild(stringEl);
+                }
+                el.guitarNeck.innerHTML = '';
+                el.guitarNeck.appendChild(neckContainer);
+            }
+            function renderIntervalCheckboxes() {
+                el.intervalCheckboxes.innerHTML = '';
+                intervalKeys.forEach(key => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex items-center';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `check-${key}`;
+                    checkbox.value = key;
+                    checkbox.checked = true;
+                    checkbox.className = 'h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500';
+                    const label = document.createElement('label');
+                    label.htmlFor = `check-${key}`;
+                    label.textContent = key;
+                    label.className = 'ml-2 text-gray-300';
+                    wrapper.append(checkbox, label);
+                    el.intervalCheckboxes.appendChild(wrapper);
+                });
+            }
+            
+            // --- Event Listeners & Initialization ---
+            
+            drawFretboard();
+            renderIntervalCheckboxes();
+            
+            document.body.addEventListener('click', initSound, { once: true });
+
+            document.querySelector('[data-action="open-challenge-menu"]').addEventListener('click', () => showScreen('challenge'));
+            document.getElementById('start-review-btn').addEventListener('click', startReviewMode);
+            
+            document.querySelector('[data-action="back-to-main"]').addEventListener('click', () => showScreen('main'));
+            el.backButton.addEventListener('click', () => {
+                if (timerInterval) clearInterval(timerInterval);
+                gameInProgress = false;
+                const action = el.backButton.dataset.action;
+                if (action === 'back-to-challenge-menu') showScreen('challenge');
+                else if (action === 'back-to-main') showScreen('main');
+            });
+
+            document.querySelectorAll('.challenge-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge));
+            });
+
+            el.newQuestionBtn.addEventListener('click', () => { if(!el.newQuestionBtn.classList.contains('btn-disabled')) { gameInProgress = true; newQuestion();} });
+            el.guitarNeck.addEventListener('click', handleFretClick);
+            el.replaySoundBtn.addEventListener('click', playInterval);
+            
+            el.settingsToggleBtn.addEventListener('click', () => el.settingsModal.classList.remove('hidden'));
+            el.closeSettingsBtn.addEventListener('click', () => el.settingsModal.classList.add('hidden'));
+            
+            const updateActiveIntervals = () => {
+                const checkedBoxes = el.intervalCheckboxes.querySelectorAll('input[type="checkbox"]:checked');
+                activeIntervalKeys = Array.from(checkedBoxes).map(cb => cb.value);
+                if(currentMode === 'challenge' && el.newQuestionBtn) {
+                    el.newQuestionBtn.disabled = activeIntervalKeys.length === 0;
+                    el.newQuestionBtn.classList.toggle('btn-disabled', activeIntervalKeys.length === 0);
+                } else if (currentMode === 'review' && rootNote) {
+                    displayReviewIntervals();
+                }
+            };
+
+            el.selectAllBtn.addEventListener('click', () => { el.intervalCheckboxes.querySelectorAll('input').forEach(cb => cb.checked = true); updateActiveIntervals(); });
+            el.deselectAllBtn.addEventListener('click', () => { el.intervalCheckboxes.querySelectorAll('input').forEach(cb => cb.checked = false); updateActiveIntervals(); });
+            el.intervalCheckboxes.addEventListener('change', updateActiveIntervals);
+        });
+    </script>
+</body>
+</html>
+
+
+
