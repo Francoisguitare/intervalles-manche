@@ -254,11 +254,20 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI",
+            authDomain: "intervalles-d644e.firebaseapp.com",
+            projectId: "intervalles-d644e",
+            storageBucket: "intervalles-d644e.firebasestorage.app",
+            messagingSenderId: "886936254900",
+            appId: "1:886936254900:web:d9bf38fe5d537c6e84dae1"
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Use a fixed app ID for this specific deployment to ensure all users see the same data
+        // in the 'public' collection as per your request for a shared user list.
+        const appId = 'gia-trainer-v1';
 
         // App Logic
         let currentUserPseudo = localStorage.getItem('gia_username') || '';
