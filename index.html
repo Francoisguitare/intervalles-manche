@@ -60,10 +60,15 @@
         .lesson-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         .lesson-scroll::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 3px; }
         
-        .user-card:hover { transform: translateY(-2px); border-color: #38bdf8; }
+        .user-card:hover { transform: translateY(-2px); border-color: #38bdf8; background-color: #4b5563; }
     </style>
 </head>
 <body class="bg-gia-gradient text-white flex flex-col items-center justify-center min-h-screen p-4 select-none">
+
+    <!-- Admin Access Button -->
+    <button id="admin-access-btn" class="fixed bottom-6 right-6 text-white hover:text-yellow-400 transition-all duration-300 z-50 opacity-80 hover:opacity-100 text-4xl p-2 hover:scale-110 filter drop-shadow-lg cursor-pointer" title="Accès Admin">
+        👑
+    </button>
 
     <!-- --- LOGIN SCREEN --- -->
     <div id="login-screen" class="w-full max-w-md mx-auto text-center relative z-10">
@@ -74,13 +79,13 @@
 
         <!-- User List Container -->
         <div id="user-selection-container" class="hidden mb-6">
-            <p class="text-gray-300 text-sm mb-3 font-semibold">Sélectionnez votre profil :</p>
+            <p class="text-gray-300 text-sm mb-3 font-semibold">Continuer en tant que :</p>
             <div id="users-list" class="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto lesson-scroll p-1">
                 <!-- Users will be injected here -->
             </div>
             <div class="relative flex py-5 items-center">
                 <div class="flex-grow border-t border-gray-600"></div>
-                <span class="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase">Ou nouveau membre</span>
+                <span class="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase">Ou créer un compte</span>
                 <div class="flex-grow border-t border-gray-600"></div>
             </div>
         </div>
@@ -226,6 +231,53 @@
     </div>
 
     <!-- --- MODALS --- -->
+    
+    <!-- PIN Modal -->
+    <div id="pin-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[60] p-4 modal-enter">
+        <div class="bg-gray-900 rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-sm modal-content-enter border border-red-900">
+            <h2 class="text-xl font-bold text-red-500 mb-4 text-center uppercase tracking-widest">Sécurité Admin</h2>
+            <p class="text-gray-400 text-center mb-4 text-sm">Entrez le code PIN.</p>
+            <div class="flex justify-center mb-6">
+                <input type="password" id="pin-input" maxlength="8" class="bg-gray-800 text-white text-center text-2xl tracking-widest p-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none w-3/4" placeholder="••••••••">
+            </div>
+            <div class="flex gap-3">
+                <button id="cancel-pin-btn" class="flex-1 bg-gray-800 text-gray-400 hover:bg-gray-700 py-2 rounded-lg text-sm font-bold">Annuler</button>
+                <button id="validate-pin-btn" class="flex-1 bg-red-700 text-white hover:bg-red-600 py-2 rounded-lg text-sm font-bold">Valider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <!-- Z-INDEX 60 to stay on top of Admin Modal (Z-50) -->
+    <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[60] p-4 modal-enter">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm modal-content-enter border border-red-600">
+            <div class="text-center mb-4">
+                <span class="text-4xl">⚠️</span>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-2 text-center">Êtes-vous sûr ?</h2>
+            <p class="text-gray-400 text-center mb-6 text-sm">Cette action supprimera définitivement le membre <span id="delete-target-name" class="text-white font-bold"></span>.</p>
+            <div class="flex gap-3">
+                <button id="cancel-delete-btn" class="flex-1 bg-gray-700 text-white hover:bg-gray-600 py-3 rounded-lg font-bold">Annuler</button>
+                <button id="confirm-delete-btn" class="flex-1 bg-red-600 text-white hover:bg-red-500 py-3 rounded-lg font-bold shadow-lg">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl modal-content-enter border border-gray-700 h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><span class="text-red-500">🛡️</span> Gestion des Membres</h2>
+                <button id="close-admin-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Supprimez les comptes inactifs ou erronés.</p>
+            
+            <div id="admin-users-list" class="flex-1 overflow-y-auto lesson-scroll bg-gray-900/50 rounded-xl p-2 border border-gray-700">
+                <!-- Admin User List Injected Here -->
+            </div>
+        </div>
+    </div>
+
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
         <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg modal-content-enter border border-gray-700">
             <div class="flex items-center gap-3 mb-6"><span class="text-4xl">🧠</span><h2 class="text-2xl font-bold text-white">Boostez votre apprentissage</h2></div>
@@ -252,7 +304,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI",
@@ -265,26 +317,20 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        // Use a fixed app ID for this specific deployment to ensure all users see the same data
-        // in the 'public' collection as per your request for a shared user list.
         const appId = 'gia-trainer-v1';
 
         // App Logic
         let currentUserPseudo = localStorage.getItem('gia_username') || '';
-        let existingUsers = [];
+        let existingUsers = []; // Full user objects {id, pseudo}
         let progressChart = null;
+        let userToDelete = null; // Temp storage for deletion
 
         // Auth Init
         const initAuth = async () => {
             try {
                 await signInAnonymously(auth);
-                console.log("Connected to Firebase (Anonymous)");
-                // Listen for users immediately to populate the list
                 listenForUsers();
                 if(currentUserPseudo) {
-                    // If local storage has user, auto login logic could go here, 
-                    // but we might want to confirm the user exists in the list first
-                    // For now, let's verify validity or just show menu
                     showMainMenu();
                 }
             } catch (error) {
@@ -304,11 +350,11 @@
                 existingUsers = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    if(data.pseudo) existingUsers.push(data.pseudo);
+                    if(data.pseudo) existingUsers.push({ id: doc.id, pseudo: data.pseudo });
                 });
-                // Remove duplicates and sort
-                existingUsers = [...new Set(existingUsers)].sort();
+                existingUsers.sort((a, b) => a.pseudo.localeCompare(b.pseudo));
                 renderUserList();
+                if(!el('admin-modal').classList.contains('hidden')) renderAdminList();
             });
         }
 
@@ -317,13 +363,15 @@
             const wrapper = el('user-selection-container');
             container.innerHTML = '';
 
-            if (existingUsers.length > 0) {
+            const uniquePseudos = [...new Set(existingUsers.map(u => u.pseudo))];
+
+            if (uniquePseudos.length > 0) {
                 wrapper.classList.remove('hidden');
-                existingUsers.forEach(user => {
+                uniquePseudos.forEach(pseudoName => {
                     const btn = document.createElement('button');
-                    btn.textContent = user;
-                    btn.className = 'user-card bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-all border border-gray-600 text-left truncate';
-                    btn.onclick = () => loginUser(user);
+                    btn.textContent = pseudoName;
+                    btn.className = 'user-card bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all border border-gray-600 text-left truncate shadow-md hover:border-sky-400 cursor-pointer';
+                    btn.onclick = () => attemptLogin(pseudoName);
                     container.appendChild(btn);
                 });
             } else {
@@ -332,9 +380,7 @@
         }
 
         function saveUserToDB(pseudo) {
-            // Check if user already exists locally to avoid spamming DB
-            // Note: This is a client-side check, perfect for "bonne intelligence"
-            const exists = existingUsers.some(u => u.toLowerCase() === pseudo.toLowerCase());
+            const exists = existingUsers.some(u => u.pseudo.toLowerCase() === pseudo.toLowerCase());
             if (!exists) {
                 addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {
                     pseudo: pseudo,
@@ -343,20 +389,92 @@
             }
         }
 
-        function loginUser(name) {
+        // --- Login Logic ---
+        function attemptLogin(name) {
+            const cleanName = name.trim();
+            if(!cleanName) { alert("Prénom vide !"); return; }
+            finalizeLogin(cleanName);
+        }
+
+        function finalizeLogin(name) {
             currentUserPseudo = name;
             localStorage.setItem('gia_username', name);
+            saveUserToDB(name); 
             showMainMenu();
         }
 
-        // --- Login Logic ---
-        el('login-btn').addEventListener('click', () => {
-            const name = el('username-input').value.trim();
-            if(name) {
-                saveUserToDB(name);
-                loginUser(name);
+        el('login-btn').addEventListener('click', () => attemptLogin(el('username-input').value));
+
+        // --- Admin Panel Logic ---
+        el('admin-access-btn').addEventListener('click', () => {
+            show('pin-modal');
+            el('pin-input').value = '';
+            el('pin-input').focus();
+        });
+
+        el('validate-pin-btn').addEventListener('click', () => {
+             if(el('pin-input').value === '18081990') {
+                hide('pin-modal');
+                show('admin-modal');
+                renderAdminList();
             } else {
-                alert("Merci d'entrer un prénom !");
+                alert("Code erroné !");
+            }
+        });
+        el('cancel-pin-btn').addEventListener('click', () => hide('pin-modal'));
+
+        el('close-admin-btn').addEventListener('click', () => hide('admin-modal'));
+
+        function renderAdminList() {
+            const container = el('admin-users-list');
+            container.innerHTML = '';
+            if(existingUsers.length === 0) { container.innerHTML = '<p class="text-gray-500 text-center p-4">Aucun membre.</p>'; return; }
+            
+            existingUsers.forEach(user => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center bg-gray-800 p-3 rounded-lg mb-2 border border-gray-700';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = user.pseudo;
+                nameSpan.className = 'text-white font-bold';
+                
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '🗑️';
+                delBtn.className = 'bg-red-900/50 hover:bg-red-600 text-white p-2 rounded transition-colors cursor-pointer';
+                delBtn.title = "Supprimer ce membre";
+                // Using addEventListener to ensure click works reliably
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    promptDelete(user.id, user.pseudo);
+                });
+                
+                row.appendChild(nameSpan);
+                row.appendChild(delBtn);
+                container.appendChild(row);
+            });
+        }
+
+        function promptDelete(docId, pseudo) {
+            userToDelete = { id: docId, pseudo: pseudo };
+            el('delete-target-name').textContent = pseudo;
+            show('confirm-delete-modal');
+        }
+
+        el('cancel-delete-btn').addEventListener('click', () => {
+            hide('confirm-delete-modal');
+            userToDelete = null;
+        });
+
+        el('confirm-delete-btn').addEventListener('click', async () => {
+            if(userToDelete) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', userToDelete.id));
+                    hide('confirm-delete-modal');
+                    // render handled by snapshot
+                } catch(e) {
+                    console.error(e);
+                    alert("Erreur suppression");
+                }
             }
         });
 
@@ -381,7 +499,10 @@
         // --- Chart Logic ---
         function loadChartData() {
             el('chart-loading').classList.remove('hidden');
-            if (progressChart) progressChart.destroy();
+            if (progressChart) {
+                progressChart.destroy();
+                progressChart = null;
+            }
 
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
             
@@ -404,6 +525,11 @@
         }
 
         function renderChart(data) {
+            if (progressChart) {
+                progressChart.destroy();
+                progressChart = null;
+            }
+            
             const ctx = el('progressionChart').getContext('2d');
             
             const labels = data.map(d => new Date(d.timestamp).toLocaleDateString(undefined, {day:'numeric', month:'numeric'}));
