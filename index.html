@@ -39,7 +39,18 @@
             transform: translate(-50%, -50%); width: 32px; height: 32px;
             background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; opacity: 1;
         }
-        .note-dot { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 3px 6px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.8); }
+        /* Updated Note Dot to prevent display issues on tablets */
+        .note-dot { 
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
+            border: 2px solid rgba(255,255,255,0.8);
+            /* Enforce centering strictly */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+        }
         
         /* Utilities */
         .btn-disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
@@ -127,7 +138,7 @@
         <!-- Right Column: Stats Chart -->
         <div class="w-full md:w-2/3 bg-gray-800/60 p-6 rounded-2xl border border-gray-700 shadow-xl backdrop-blur-sm">
             <h3 class="text-xl font-bold text-white mb-4 flex justify-between items-center">
-                Ta Progression
+                Progression (Meilleur score du jour)
                 <span class="text-xs font-normal text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-600">Objectif: 30/30</span>
             </h3>
             <div class="relative w-full h-64">
@@ -248,7 +259,6 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <!-- Z-INDEX 60 to stay on top of Admin Modal (Z-50) -->
     <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[60] p-4 modal-enter">
         <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm modal-content-enter border border-red-600">
             <div class="text-center mb-4">
@@ -271,10 +281,7 @@
                 <button id="close-admin-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             <p class="text-gray-400 text-sm mb-4">Supprimez les comptes inactifs ou erronés.</p>
-            
-            <div id="admin-users-list" class="flex-1 overflow-y-auto lesson-scroll bg-gray-900/50 rounded-xl p-2 border border-gray-700">
-                <!-- Admin User List Injected Here -->
-            </div>
+            <div id="admin-users-list" class="flex-1 overflow-y-auto lesson-scroll bg-gray-900/50 rounded-xl p-2 border border-gray-700"></div>
         </div>
     </div>
 
@@ -321,24 +328,19 @@
 
         // App Logic
         let currentUserPseudo = localStorage.getItem('gia_username') || '';
-        let existingUsers = []; // Full user objects {id, pseudo}
+        let existingUsers = []; 
         let progressChart = null;
-        let userToDelete = null; // Temp storage for deletion
+        let userToDelete = null;
 
         // Auth Init
         const initAuth = async () => {
             try {
                 await signInAnonymously(auth);
                 listenForUsers();
-                if(currentUserPseudo) {
-                    showMainMenu();
-                }
-            } catch (error) {
-                console.error("Auth failed", error);
-            }
+                if(currentUserPseudo) showMainMenu();
+            } catch (error) { console.error("Auth failed", error); }
         };
         
-        // UI Helpers
         const el = (id) => document.getElementById(id);
         const show = (id) => document.getElementById(id).classList.remove('hidden');
         const hide = (id) => document.getElementById(id).classList.add('hidden');
@@ -362,9 +364,7 @@
             const container = el('users-list');
             const wrapper = el('user-selection-container');
             container.innerHTML = '';
-
             const uniquePseudos = [...new Set(existingUsers.map(u => u.pseudo))];
-
             if (uniquePseudos.length > 0) {
                 wrapper.classList.remove('hidden');
                 uniquePseudos.forEach(pseudoName => {
@@ -374,9 +374,7 @@
                     btn.onclick = () => attemptLogin(pseudoName);
                     container.appendChild(btn);
                 });
-            } else {
-                wrapper.classList.add('hidden');
-            }
+            } else { wrapper.classList.add('hidden'); }
         }
 
         function saveUserToDB(pseudo) {
@@ -389,7 +387,6 @@
             }
         }
 
-        // --- Login Logic ---
         function attemptLogin(name) {
             const cleanName = name.trim();
             if(!cleanName) { alert("Prénom vide !"); return; }
@@ -407,50 +404,33 @@
 
         // --- Admin Panel Logic ---
         el('admin-access-btn').addEventListener('click', () => {
-            show('pin-modal');
-            el('pin-input').value = '';
-            el('pin-input').focus();
+            show('pin-modal'); el('pin-input').value = ''; el('pin-input').focus();
         });
 
         el('validate-pin-btn').addEventListener('click', () => {
              if(el('pin-input').value === '18081990') {
-                hide('pin-modal');
-                show('admin-modal');
-                renderAdminList();
-            } else {
-                alert("Code erroné !");
-            }
+                hide('pin-modal'); show('admin-modal'); renderAdminList();
+            } else { alert("Code erroné !"); }
         });
         el('cancel-pin-btn').addEventListener('click', () => hide('pin-modal'));
-
         el('close-admin-btn').addEventListener('click', () => hide('admin-modal'));
 
         function renderAdminList() {
             const container = el('admin-users-list');
             container.innerHTML = '';
             if(existingUsers.length === 0) { container.innerHTML = '<p class="text-gray-500 text-center p-4">Aucun membre.</p>'; return; }
-            
             existingUsers.forEach(user => {
                 const row = document.createElement('div');
                 row.className = 'flex justify-between items-center bg-gray-800 p-3 rounded-lg mb-2 border border-gray-700';
-                
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = user.pseudo;
                 nameSpan.className = 'text-white font-bold';
-                
                 const delBtn = document.createElement('button');
                 delBtn.innerHTML = '🗑️';
                 delBtn.className = 'bg-red-900/50 hover:bg-red-600 text-white p-2 rounded transition-colors cursor-pointer';
                 delBtn.title = "Supprimer ce membre";
-                // Using addEventListener to ensure click works reliably
-                delBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    promptDelete(user.id, user.pseudo);
-                });
-                
-                row.appendChild(nameSpan);
-                row.appendChild(delBtn);
-                container.appendChild(row);
+                delBtn.addEventListener('click', (e) => { e.stopPropagation(); promptDelete(user.id, user.pseudo); });
+                row.appendChild(nameSpan); row.appendChild(delBtn); container.appendChild(row);
             });
         }
 
@@ -460,78 +440,64 @@
             show('confirm-delete-modal');
         }
 
-        el('cancel-delete-btn').addEventListener('click', () => {
-            hide('confirm-delete-modal');
-            userToDelete = null;
-        });
-
+        el('cancel-delete-btn').addEventListener('click', () => { hide('confirm-delete-modal'); userToDelete = null; });
         el('confirm-delete-btn').addEventListener('click', async () => {
             if(userToDelete) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', userToDelete.id));
                     hide('confirm-delete-modal');
-                    // render handled by snapshot
-                } catch(e) {
-                    console.error(e);
-                    alert("Erreur suppression");
-                }
+                } catch(e) { console.error(e); alert("Erreur suppression"); }
             }
         });
 
         el('logout-btn').addEventListener('click', () => {
             currentUserPseudo = '';
             localStorage.removeItem('gia_username');
-            hide('main-menu');
-            show('login-screen');
-            el('username-input').value = '';
+            hide('main-menu'); show('login-screen'); el('username-input').value = '';
         });
 
         function showMainMenu() {
             el('display-username').textContent = currentUserPseudo;
-            hide('login-screen');
-            hide('challenge-selection-menu');
-            hide('review-setup-screen');
-            hide('app-container');
-            show('main-menu');
-            loadChartData();
+            hide('login-screen'); hide('challenge-selection-menu'); hide('review-setup-screen'); hide('app-container');
+            show('main-menu'); loadChartData();
         }
 
-        // --- Chart Logic ---
+        // --- Chart Logic (Optimized: Max score per day) ---
         function loadChartData() {
             el('chart-loading').classList.remove('hidden');
-            if (progressChart) {
-                progressChart.destroy();
-                progressChart = null;
-            }
+            if (progressChart) { progressChart.destroy(); progressChart = null; }
 
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
             
             onSnapshot(q, (snapshot) => {
-                const scores = [];
+                const rawScores = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.pseudo && data.pseudo.toLowerCase() === currentUserPseudo.toLowerCase()) {
-                        scores.push(data);
+                        rawScores.push(data);
                     }
                 });
 
-                scores.sort((a, b) => a.timestamp - b.timestamp);
-                renderChart(scores);
+                // GROUP BY DAY and TAKE MAX SCORE
+                const scoresByDay = {};
+                rawScores.forEach(item => {
+                    const dateKey = new Date(item.timestamp).toLocaleDateString('fr-FR'); // Group by local date string
+                    if (!scoresByDay[dateKey] || item.score > scoresByDay[dateKey].score) {
+                        scoresByDay[dateKey] = { score: item.score, timestamp: item.timestamp };
+                    }
+                });
+
+                // Convert back to array and sort
+                const aggregatedScores = Object.values(scoresByDay).sort((a, b) => a.timestamp - b.timestamp);
+
+                renderChart(aggregatedScores);
                 el('chart-loading').classList.add('hidden');
-            }, (error) => {
-                console.error("Error loading scores:", error);
-                el('chart-loading').textContent = "Erreur de chargement.";
-            });
+            }, (error) => { console.error("Error loading scores:", error); el('chart-loading').textContent = "Erreur de chargement."; });
         }
 
         function renderChart(data) {
-            if (progressChart) {
-                progressChart.destroy();
-                progressChart = null;
-            }
-            
+            if (progressChart) { progressChart.destroy(); progressChart = null; }
             const ctx = el('progressionChart').getContext('2d');
-            
             const labels = data.map(d => new Date(d.timestamp).toLocaleDateString(undefined, {day:'numeric', month:'numeric'}));
             const dataPoints = data.map(d => d.score);
             const goalLine = Array(data.length).fill(30);
@@ -542,13 +508,14 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Score',
+                            label: 'Meilleur Score',
                             data: dataPoints,
                             borderColor: '#0ea5e9', 
                             backgroundColor: 'rgba(14, 165, 233, 0.2)',
                             tension: 0.3,
                             fill: true,
-                            pointRadius: 4
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         },
                         {
                             label: 'Objectif',
@@ -566,32 +533,26 @@
                     plugins: { legend: { labels: { color: '#9ca3af' } } },
                     scales: {
                         y: { beginAtZero: true, max: 35, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { color: 'transparent' }, ticks: { color: '#9ca3af', maxTicksLimit: 10 } }
+                        x: { grid: { color: 'transparent' }, ticks: { color: '#9ca3af' } }
                     }
                 }
             });
         }
 
-        // --- Save Score Logic ---
         window.saveScoreToFirebase = async (score, mode) => {
             if(!currentUserPseudo) return;
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
-                    pseudo: currentUserPseudo,
-                    score: score,
-                    total: 30,
-                    mode: mode,
-                    timestamp: Date.now()
+                    pseudo: currentUserPseudo, score: score, total: 30, mode: mode, timestamp: Date.now()
                 });
             } catch (e) { console.error("Error saving score:", e); }
         };
 
-        // Initialize
         initAuth();
     </script>
 
     <script>
-        // --- GAME SCRIPT (Existing logic + Firebase Hook) ---
+        // --- GAME SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
             const NUM_STRINGS = 6, NUM_FRETS = 15;
             const SEARCH_ZONE_RADIUS = 4;
@@ -627,7 +588,6 @@
             };
 
             const el = (id) => document.getElementById(id);
-            // State
             let rootNote, targetNote, correctInterval;
             let gameInProgress = false, soundReady = false, synth;
             let activeIntervalKeys = [...intervalKeys]; 
@@ -635,26 +595,15 @@
             let lives, score, currentChallenge, currentMode;
             let timerInterval, timeLeft;
 
-            // Sound
             const initSound = async () => { if (!soundReady) { try { await Tone.start(); synth = new Tone.FMSynth({ harmonicity: 3.01, modulationIndex: 14, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.4 } }).toDestination(); soundReady = true; } catch (e) { console.error("Could not start audio.", e); } } };
             const getNoteWithOctave = (s, f) => { const total = TUNING_SEMITONES_FROM_C0[s] + f; return NOTES[total % 12] + Math.floor(total / 12); };
             const playInterval = () => { if (soundReady && rootNote && targetNote) { const rootOctave = getNoteWithOctave(rootNote.string, rootNote.fret); const targetOctave = getNoteWithOctave(targetNote.string, targetNote.fret); synth.triggerAttackRelease(rootOctave, "8n"); synth.triggerAttackRelease(targetOctave, "8n", "+4n"); } };
 
-            // Navigation Helpers
-            const hideAllScreens = () => {
-                ['login-screen', 'main-menu', 'challenge-selection-menu', 'review-setup-screen', 'app-container'].forEach(id => {
-                    document.getElementById(id).classList.add('hidden');
-                });
-            }
+            const hideAllScreens = () => { ['login-screen', 'main-menu', 'challenge-selection-menu', 'review-setup-screen', 'app-container'].forEach(id => el(id).classList.add('hidden')); }
 
-            // Navigation Handlers
             document.querySelector('[data-action="open-challenge-menu"]').addEventListener('click', () => { hideAllScreens(); el('challenge-selection-menu').classList.remove('hidden'); });
             el('start-review-setup-btn').addEventListener('click', () => { renderCheckboxes(el('review-checkboxes'), true); hideAllScreens(); el('review-setup-screen').classList.remove('hidden'); });
-            document.querySelectorAll('[data-action="back-to-main"]').forEach(b => b.addEventListener('click', () => { 
-                hideAllScreens(); 
-                el('main-menu').classList.remove('hidden');
-                if(window.saveScoreToFirebase) { /* No explicit reload needed, snapshot is live */ }
-            }));
+            document.querySelectorAll('[data-action="back-to-main"]').forEach(b => b.addEventListener('click', () => { hideAllScreens(); el('main-menu').classList.remove('hidden'); if(window.saveScoreToFirebase) { } }));
 
             el('back-button').addEventListener('click', () => {
                 if (timerInterval) clearInterval(timerInterval);
@@ -664,88 +613,43 @@
                 else el('main-menu').classList.remove('hidden');
             });
 
-            // Game Logic
             const startChallenge = (challengeKey) => {
-                currentMode = 'challenge';
-                currentChallenge = { ...CHALLENGES[challengeKey], key: challengeKey };
-                activeIntervalKeys = [...intervalKeys]; 
-                lives = currentChallenge.lives;
-                score = 0;
-                
-                el('app-title').textContent = `Challenge ${currentChallenge.name}`;
-                el('game-ui-bar').classList.remove('hidden');
-                el('training-section-controls').classList.remove('hidden');
-                el('review-lesson-box').classList.add('hidden');
-                
-                updateScoreDisplay();
-                updateLivesDisplay();
-                startTimer(currentChallenge.time);
-                hideAllScreens();
-                el('app-container').classList.remove('hidden');
-                gameInProgress = true;
-                newQuestion();
+                currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[challengeKey], key: challengeKey }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0;
+                el('app-title').textContent = `Challenge ${currentChallenge.name}`; el('game-ui-bar').classList.remove('hidden'); el('training-section-controls').classList.remove('hidden'); el('review-lesson-box').classList.add('hidden');
+                updateScoreDisplay(); updateLivesDisplay(); startTimer(currentChallenge.time); hideAllScreens(); el('app-container').classList.remove('hidden'); gameInProgress = true; newQuestion();
             };
 
             const startReviewSession = () => {
                 const checked = el('review-checkboxes').querySelectorAll('input:checked');
                 if (checked.length === 0) { alert("Sélectionnez au moins un intervalle !"); return; }
-                activeIntervalKeys = Array.from(checked).map(cb => cb.value);
-                currentMode = 'review';
-                el('app-title').textContent = 'Entraînement Libre';
-                el('game-ui-bar').classList.add('hidden');
-                el('training-section-controls').classList.remove('hidden');
-                el('review-lesson-box').classList.remove('hidden');
+                activeIntervalKeys = Array.from(checked).map(cb => cb.value); currentMode = 'review';
+                el('app-title').textContent = 'Entraînement Libre'; el('game-ui-bar').classList.add('hidden'); el('training-section-controls').classList.remove('hidden'); el('review-lesson-box').classList.remove('hidden');
                 el('lesson-content').innerHTML = activeIntervalKeys.map(k => `<div class="mb-1 flex gap-2"><strong class="text-indigo-300 bg-indigo-900 px-1 rounded text-xs flex items-center">${k}</strong> <span class="text-gray-300">${INTERVALS_DATA[k].desc}</span></div>`).join('');
-                hideAllScreens();
-                el('app-container').classList.remove('hidden');
-                gameInProgress = true;
-                newQuestion();
+                hideAllScreens(); el('app-container').classList.remove('hidden'); gameInProgress = true; newQuestion();
             };
 
             const startTimer = (seconds) => {
-                if (timerInterval) clearInterval(timerInterval);
-                if (!seconds) { el('timer-display').classList.add('hidden'); return; }
-                timeLeft = seconds;
-                el('timer-display').classList.remove('hidden');
-                el('timer-display').textContent = `${timeLeft}s`;
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    el('timer-display').textContent = `${timeLeft}s`;
-                    if (timeLeft <= 0) endGame(false, 'timeout');
-                }, 1000);
+                if (timerInterval) clearInterval(timerInterval); if (!seconds) { el('timer-display').classList.add('hidden'); return; }
+                timeLeft = seconds; el('timer-display').classList.remove('hidden'); el('timer-display').textContent = `${timeLeft}s`;
+                timerInterval = setInterval(() => { timeLeft--; el('timer-display').textContent = `${timeLeft}s`; if (timeLeft <= 0) endGame(false, 'timeout'); }, 1000);
             };
 
             const endGame = (isWin, reason = null) => {
-                if (timerInterval) clearInterval(timerInterval);
-                gameInProgress = false;
-                el('end-game-buttons').innerHTML = '';
-                
-                if(currentMode === 'challenge') {
-                    if(window.saveScoreToFirebase) window.saveScoreToFirebase(score, currentChallenge.name);
-                }
-
+                if (timerInterval) clearInterval(timerInterval); gameInProgress = false; el('end-game-buttons').innerHTML = '';
+                if(currentMode === 'challenge' && window.saveScoreToFirebase) window.saveScoreToFirebase(score, currentChallenge.name);
                 if (isWin) {
-                    el('end-game-title').textContent = `Challenge Validé !`;
-                    el('end-game-title').className = 'text-4xl font-bold mb-4 text-green-400 tracking-tighter';
+                    el('end-game-title').textContent = `Challenge Validé !`; el('end-game-title').className = 'text-4xl font-bold mb-4 text-green-400 tracking-tighter';
                     el('end-game-message').innerHTML = `<div class="bg-green-900/30 border border-green-500/30 p-6 rounded-xl text-green-100"><p class="text-xl font-bold mb-2">Félicitations ! 🎉</p><p class="text-sm opacity-80">Score enregistré.</p></div>`;
-                    if (currentChallenge.next) {
-                        el('end-game-buttons').appendChild(createButton(`Niveau Suivant`, 'bg-blue-600', () => { el('end-game-modal').classList.add('hidden'); startChallenge(currentChallenge.next); }));
-                    }
+                    if (currentChallenge.next) el('end-game-buttons').appendChild(createButton(`Niveau Suivant`, 'bg-blue-600', () => { el('end-game-modal').classList.add('hidden'); startChallenge(currentChallenge.next); }));
                 } else {
-                    el('end-game-title').textContent = 'Aïe...';
-                    el('end-game-title').className = 'text-4xl font-bold mb-4 text-red-400';
+                    el('end-game-title').textContent = 'Aïe...'; el('end-game-title').className = 'text-4xl font-bold mb-4 text-red-400';
                     el('end-game-message').innerHTML = `<div class="mb-4">${reason === 'timeout' ? "Temps écoulé." : "Plus de vies."}</div><div class="text-sm text-gray-500">Score enregistré : ${score}/${currentChallenge.goal}</div>`;
                     el('end-game-buttons').appendChild(createButton('Réessayer', 'bg-gray-600', () => { el('end-game-modal').classList.add('hidden'); startChallenge(currentChallenge.key); }));
                 }
-                el('end-game-buttons').appendChild(createButton('Menu Principal', 'bg-transparent border border-gray-600 hover:bg-gray-700', () => { 
-                    el('end-game-modal').classList.add('hidden'); 
-                    hideAllScreens();
-                    el('main-menu').classList.remove('hidden');
-                }));
+                el('end-game-buttons').appendChild(createButton('Menu Principal', 'bg-transparent border border-gray-600 hover:bg-gray-700', () => { el('end-game-modal').classList.add('hidden'); hideAllScreens(); el('main-menu').classList.remove('hidden'); }));
                 el('end-game-modal').classList.remove('hidden');
             };
 
-            // Core Game Functions
             const getNoteValue = (s, f) => (TUNING_SEMITONES_FROM_C0[s] + f) % 12;
             const findValidTarget = (root) => {
                 const possibleTargets = [];
@@ -769,10 +673,7 @@
 
             const newQuestion = () => {
                 if (!gameInProgress) return;
-                clearBoard();
-                el('feedback-message').textContent = '';
-                el('new-question-btn').classList.add('btn-disabled');
-                el('new-question-btn').classList.remove('btn-highlight');
+                clearBoard(); el('feedback-message').textContent = ''; el('new-question-btn').classList.add('btn-disabled'); el('new-question-btn').classList.remove('btn-highlight');
                 currentNoteDisplay = Math.random() < 0.5 ? NOTES_SHARP : NOTES_FLAT;
                 let potentialRootNote, potentialTargetNote, retries = 0;
                 while (!potentialTargetNote && retries < 200) {
@@ -785,9 +686,6 @@
                 if (!potentialTargetNote) { alert("Pas de question possible."); return; }
                 rootNote = potentialRootNote; targetNote = potentialTargetNote;
                 const rVal = getNoteValue(rootNote.string, rootNote.fret);
-                const tVal = getNoteValue(targetNote.string, targetNote.fret);
-                let iVal = (tVal - rVal + 12) % 12; if (iVal === 0) iVal = 12;
-                correctInterval = Object.keys(INTERVALS).find(key => INTERVALS[key] === iVal);
                 placeNote(rootNote.string, rootNote.fret, 'F', { note: currentNoteDisplay[rVal] });
                 placeNote(targetNote.string, targetNote.fret, 'T');
                 generateAnswerChoices();
@@ -801,8 +699,7 @@
                 el('answer-buttons').innerHTML = '';
                 choices.forEach(choice => {
                     const btn = createButton(choice, 'answer-btn bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-4 px-4 rounded-lg transition-all text-xl shadow-md', () => handleAnswerClick(choice));
-                    btn.dataset.interval = choice;
-                    el('answer-buttons').appendChild(btn);
+                    btn.dataset.interval = choice; el('answer-buttons').appendChild(btn);
                 });
             };
 
@@ -810,8 +707,7 @@
                 if (!gameInProgress) return;
                 const isCorrect = selectedInterval === correctInterval;
                 el('answer-buttons').querySelectorAll('button').forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.borderBottomWidth = '0px'; btn.style.transform = 'translateY(2px)';
+                    btn.disabled = true; btn.style.borderBottomWidth = '0px'; btn.style.transform = 'translateY(2px)';
                     if (btn.dataset.interval === correctInterval) btn.classList.add('correct');
                     else if (btn.dataset.interval === selectedInterval && !isCorrect) btn.classList.add('incorrect');
                     else btn.classList.add('opacity-30');
@@ -824,22 +720,24 @@
                     if (currentMode === 'challenge') { lives--; updateLivesDisplay(); if (lives <= 0) setTimeout(() => endGame(false), 1000); }
                 }
                 if ((currentMode === 'review') || (currentMode === 'challenge' && lives > 0 && score < currentChallenge.goal)) {
-                    el('new-question-btn').classList.remove('btn-disabled');
-                    el('new-question-btn').classList.add('btn-highlight');
+                    el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
                 }
             };
 
             const updateScoreDisplay = () => { if(el('score-display') && currentChallenge) el('score-display').textContent = `${score}/${currentChallenge.goal}`; };
             const updateLivesDisplay = () => { if(!el('lives-display') || !currentChallenge) return; el('lives-display').innerHTML = ''; for (let i = 0; i < currentChallenge.lives; i++) { el('lives-display').innerHTML += (i < lives) ? '❤️' : '<span class="opacity-20 grayscale">❤️</span>'; } };
 
-            // UI Generation
             function createButton(text, classes, onClick) { const btn = document.createElement('button'); btn.textContent = text; btn.className = `${classes} text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200`; btn.onclick = onClick; return btn; }
+            
             function placeNote(s, f, type, data = {}) {
-                const fretWrapper = el('guitar-neck').querySelector(`[data-string='${s}'][data-fret='${f}']`).parentElement;
+                // DOM Query strict
+                const fretWrapper = el('guitar-neck').querySelector(`[data-string='${s}'][data-fret='${f}']`)?.parentElement;
+                if (!fretWrapper) { console.error("Fret missing in DOM:", s, f); return; }
                 removeNote(s,f);
                 const noteDot = document.createElement('div');
                 let bgColor = (type === 'F') ? 'bg-sky-500' : ((type === 'T') ? 'bg-indigo-500' : 'bg-red-500');
-                noteDot.className = `note-dot w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-30 ${bgColor} text-white absolute`;
+                // CSS enforced centering
+                noteDot.className = `note-dot w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${bgColor} text-white`;
                 noteDot.textContent = (type === 'F') ? data.note : ((type === 'T') ? '?' : 'X');
                 fretWrapper.appendChild(noteDot);
             }
