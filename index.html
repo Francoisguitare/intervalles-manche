@@ -2,798 +2,502 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entraîneur d'Intervalles - Guitare Impro Académie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Intervalles Trainer - Guitare Impro Académie</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        body { font-family: 'Inter', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        .bg-gia-gradient { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); position: relative; height: 100vh; width: 100vw; }
         
-        .bg-gia-gradient {
-            background: radial-gradient(circle at center, #1f2937 0%, #111827 100%);
-            position: relative;
-            overflow: hidden;
-        }
-        .bg-gia-gradient::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23374151' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.5;
-            z-index: 0;
-        }
+        /* --- LAYOUT --- */
+        .app-layout { display: grid; grid-template-columns: 1fr; height: 100vh; width: 100vw; overflow: hidden; }
+        @media (min-width: 1024px) { .app-layout { grid-template-columns: 1fr 200px; } }
 
-        /* Fretboard styling */
-        .fretboard { background: linear-gradient(90deg, #5D4037, #3E2723); border: 4px solid #281810; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
-        .fret-line { background-color: #B0BEC5; box-shadow: 1px 0 2px rgba(0,0,0,0.5); }
-        .fret-nut { background-color: #E0E0E0; box-shadow: 2px 0 5px rgba(0,0,0,0.5); }
-        .string { background-color: #E0E0E0; box-shadow: 0 2px 4px rgba(0,0,0,0.4); transition: opacity 0.3s ease; }
-        
-        /* Note styling */
-        .note-target:hover::after {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); width: 32px; height: 32px;
-            background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; opacity: 1;
+        /* --- SIDEBAR (CAMPUS) --- */
+        .sidebar-glass { background: rgba(2, 6, 23, 0.6); border-left: 1px solid rgba(255, 255, 255, 0.03); }
+        .feed-item { 
+            font-size: 10px; color: #9ca3af; padding: 1px 0; 
+            display: flex; align-items: center; gap: 4px; 
+            white-space: nowrap; overflow: hidden;
+            line-height: 1.4;
         }
-        /* Updated Note Dot to prevent display issues on tablets */
-        .note-dot { 
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
-            border: 2px solid rgba(255,255,255,0.8);
-            /* Enforce centering strictly */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 30;
-        }
+        .feed-item:hover { color: #e5e7eb; }
         
-        /* Utilities */
-        .btn-disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
-        .btn-highlight { animation: pulse-glow 2s infinite; }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); transform: scale(1); } 50% { box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0); transform: scale(1.02); } }
-        
-        .answer-btn { border-bottom: 4px solid rgba(0,0,0,0.3); }
-        .answer-btn:active { border-bottom: 0px solid; transform: translateY(4px); }
-        .answer-btn.correct { background-color: #10B981 !important; border-color: #059669 !important; color: white; }
-        .answer-btn.incorrect { background-color: #EF4444 !important; border-color: #B91C1C !important; color: white; }
+        /* --- MAIN CONTENT --- */
+        .main-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 1rem; overflow-y: auto; position: relative; }
 
-        .modal-enter { animation: modal-fade-in 0.3s ease-out forwards; }
-        .modal-content-enter { animation: modal-zoom-in 0.3s ease-out forwards; }
-        @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modal-zoom-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        /* --- GAME & PATH --- */
+        .path-container-inner { padding: 10px 0 40px 0; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .path-svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .path-node-wrapper { position: relative; z-index: 10; display: flex; justify-content: center; margin-bottom: 25px; width: 100%; }
+        .path-node-btn { width: 65px; height: 65px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e293b; border: 3px solid #334155; box-shadow: 0 4px 0 #0f172a; transition: transform 0.1s, filter 0.3s; cursor: pointer; position: relative; z-index: 10; }
+        .path-node-btn:active:not(.locked) { transform: translateY(3px); box-shadow: none; }
+        .path-node-btn.locked { filter: grayscale(100%) opacity(0.5); cursor: not-allowed; border-color: #475569; }
+        .path-node-btn.unlocked { background: linear-gradient(135deg, #4f46e5, #2563eb); border-color: #6366f1; }
+        .path-node-btn.completed { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #fbbf24; }
+        .stars-container { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); display: flex; gap: 1px; background: rgba(0,0,0,0.9); padding: 1px 4px; rounded-full; border: 1px solid #334155; }
 
-        .lesson-scroll::-webkit-scrollbar { width: 6px; }
-        .lesson-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        .lesson-scroll::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 3px; }
+        .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .btn-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+        .note-dot { transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 30; }
+        .note-pop { animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pop-in { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+        .btn-highlight { animation: pulse-blue 2s infinite; }
+        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); } 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); } }
         
-        .user-card:hover { transform: translateY(-2px); border-color: #38bdf8; background-color: #4b5563; }
+        .fretboard { background: #271c19; border: 3px solid #15100e; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); border-radius: 4px; }
+        .fret-line { background-color: #9ca3af; width: 2px !important; }
+        .fret-nut { background-color: #e5e5e5; }
+        .string { background: #9ca3af; box-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+        #chat-toggle-wrapper { position: fixed; top: 16px; right: 16px; z-index: 9999; }
+        @media (min-width: 1024px) { #chat-toggle-wrapper { right: 220px; } }
+        .chat-window { position: fixed; top: 60px; right: 16px; width: 260px; height: 300px; background: rgba(15, 23, 42, 0.98); border: 1px solid #334155; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); display: none; flex-direction: column; z-index: 9998; }
+        .chat-window.open { display: flex; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 11px; }
+        .chat-message { margin-bottom: 6px; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); word-wrap: break-word; }
+        .chat-message.mine { background: rgba(56, 189, 248, 0.3); align-self: flex-end; }
+        .notif-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; }
+
+        .admin-crown { position: fixed; bottom: 10px; right: 10px; z-index: 9000; font-size: 1.5rem; cursor: pointer; opacity: 0.2; transition: all 0.3s; }
+        .admin-crown:hover { opacity: 1; }
+        @media (min-width: 1024px) { .admin-crown { right: 200px; } }
+
+        .answer-btn { position: relative; border-bottom: 3px solid rgba(0,0,0,0.3); transition: all 0.1s; }
+        .answer-btn:active { border-bottom-width: 0; transform: translateY(3px); }
+        .answer-btn.correct { background: #059669 !important; color: white; border-color: #064e3b !important; }
+        .answer-btn.incorrect { background: #dc2626 !important; color: white; border-color: #991b1b !important; }
+        
+        .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
+        .admin-table td { padding: 12px; border-bottom: 1px solid #374151/50; font-size: 13px; color: #e5e7eb; }
     </style>
 </head>
-<body class="bg-gia-gradient text-white flex flex-col items-center justify-center min-h-screen p-4 select-none">
+<body class="bg-gia-gradient text-gray-200 select-none">
 
-    <!-- Admin Access Button -->
-    <button id="admin-access-btn" class="fixed bottom-6 right-6 text-white hover:text-yellow-400 transition-all duration-300 z-50 opacity-80 hover:opacity-100 text-4xl p-2 hover:scale-110 filter drop-shadow-lg cursor-pointer" title="Accès Admin">
-        👑
-    </button>
+    <div id="admin-access-btn" class="admin-crown" title="Accès Admin">👑</div>
 
-    <!-- --- LOGIN SCREEN --- -->
-    <div id="login-screen" class="w-full max-w-md mx-auto text-center relative z-10">
-        <div class="mb-8">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400 mb-2 tracking-tight filter drop-shadow-lg">GIA TRAINER</h1>
-            <p class="text-gray-400 font-medium uppercase tracking-widest text-xs">Espace Membre</p>
-        </div>
-
-        <!-- User List Container -->
-        <div id="user-selection-container" class="hidden mb-6">
-            <p class="text-gray-300 text-sm mb-3 font-semibold">Continuer en tant que :</p>
-            <div id="users-list" class="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto lesson-scroll p-1">
-                <!-- Users will be injected here -->
-            </div>
-            <div class="relative flex py-5 items-center">
-                <div class="flex-grow border-t border-gray-600"></div>
-                <span class="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase">Ou créer un compte</span>
-                <div class="flex-grow border-t border-gray-600"></div>
-            </div>
-        </div>
-        
-        <div class="bg-gray-800/80 p-8 rounded-2xl border border-gray-700 shadow-2xl backdrop-blur-sm">
-            <label class="block text-left text-gray-300 text-sm font-bold mb-2" for="username">Nouveau Prénom</label>
-            <input id="username-input" type="text" placeholder="Ex: François" class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500 outline-none mb-6 transition-all" />
-            <button id="login-btn" class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all transform hover:-translate-y-1">
-                Créer & Commencer
-            </button>
-        </div>
-    </div>
-
-    <!-- --- MAIN MENU --- -->
-    <div id="main-menu" class="hidden w-full max-w-4xl mx-auto relative z-10 flex flex-col md:flex-row gap-8 items-start">
-        
-        <!-- Left Column: Actions -->
-        <div class="w-full md:w-1/3 text-center md:text-left">
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-white">Bonjour <span id="display-username" class="text-sky-400"></span> !</h2>
-                <p class="text-gray-400 text-sm mt-1">Prêt à muscler ton oreille ?</p>
-            </div>
-            
-            <div class="space-y-4">
-                <button id="btn-brain-info" class="w-full bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-500/30 text-indigo-200 font-semibold py-3 px-4 rounded-xl transition-all text-sm flex items-center justify-center gap-2">
-                    <span>🧠</span> Le secret de l'apprentissage
-                </button>
-                <div class="h-px bg-gray-700 w-full my-4"></div>
-                <button data-action="open-challenge-menu" class="w-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg text-lg border-b-4 border-blue-800 active:translate-y-0 active:border-b-0 transition-all">
-                    🏆 Mode Challenge
-                </button>
-                <button id="start-review-setup-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-4 px-6 rounded-xl shadow-lg text-lg border-b-4 border-gray-900 active:translate-y-0 active:border-b-0 transition-all">
-                    📚 Mode Révision
-                </button>
-                <button id="logout-btn" class="text-xs text-gray-500 hover:text-white mt-4 underline">Changer d'utilisateur</button>
-            </div>
-        </div>
-
-        <!-- Right Column: Stats Chart -->
-        <div class="w-full md:w-2/3 bg-gray-800/60 p-6 rounded-2xl border border-gray-700 shadow-xl backdrop-blur-sm">
-            <h3 class="text-xl font-bold text-white mb-4 flex justify-between items-center">
-                Progression (Meilleur score du jour)
-                <span class="text-xs font-normal text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-600">Objectif: 30/30</span>
-            </h3>
-            <div class="relative w-full h-64">
-                <canvas id="progressionChart"></canvas>
-            </div>
-            <p id="chart-loading" class="text-center text-gray-400 text-sm mt-2">Chargement des données...</p>
-        </div>
-    </div>
-
-    <!-- --- CHALLENGE MENU --- -->
-    <div id="challenge-selection-menu" class="hidden w-full max-w-md mx-auto text-center z-10">
-        <h2 class="text-3xl font-bold text-white mb-8 filter drop-shadow-md">Choisissez votre niveau</h2>
-        <div class="space-y-4">
-            <button data-challenge="bronze" class="challenge-btn w-full bg-gradient-to-r from-amber-700 to-yellow-700 hover:from-amber-600 hover:to-yellow-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg border-b-4 border-yellow-900 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="flex items-center justify-between">
-                    <span class="text-2xl">🥉</span>
-                    <div class="text-left flex-1 ml-4">
-                        <div class="text-lg">Bronze</div>
-                        <div class="text-xs font-normal opacity-90">10 réponses • 180s • 3 Vies</div>
-                    </div>
-                </div>
-            </button>
-            <button data-challenge="silver" class="challenge-btn w-full bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-300 hover:to-gray-400 text-gray-900 font-bold py-4 px-6 rounded-xl shadow-lg border-b-4 border-gray-700 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="flex items-center justify-between">
-                    <span class="text-2xl">🥈</span>
-                    <div class="text-left flex-1 ml-4">
-                        <div class="text-lg">Argent</div>
-                        <div class="text-xs font-normal opacity-90 text-gray-800">20 réponses • 180s • 3 Vies</div>
-                    </div>
-                </div>
-            </button>
-            <button data-challenge="gold" class="challenge-btn w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-yellow-900 font-bold py-4 px-6 rounded-xl shadow-lg border-b-4 border-yellow-700 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="flex items-center justify-between">
-                    <span class="text-2xl">🥇</span>
-                    <div class="text-left flex-1 ml-4">
-                        <div class="text-lg">Or</div>
-                        <div class="text-xs font-normal opacity-90 text-yellow-900">30 réponses • 120s • 3 Vies</div>
-                    </div>
-                </div>
-            </button>
-        </div>
-        <button data-action="back-to-main" class="mt-10 text-sky-400 hover:text-sky-300 font-semibold py-2 px-4 rounded hover:bg-white/5 transition-colors">← Retour au menu</button>
-    </div>
-
-    <!-- --- REVIEW SETUP SCREEN --- -->
-    <div id="review-setup-screen" class="hidden w-full max-w-2xl mx-auto bg-gray-800/90 backdrop-blur rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700 z-10">
-        <h2 class="text-2xl font-bold text-white mb-2 text-center">Configuration de la Révision</h2>
-        <p class="text-gray-400 text-center mb-6 text-sm">Cochez les intervalles à travailler.</p>
-        <div id="review-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8"></div>
-        <div class="flex gap-3 mb-8">
-            <button id="review-select-all" class="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition-colors">Tout</button>
-            <button id="review-deselect-all" class="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition-colors">Rien</button>
-        </div>
-        <button id="launch-review-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all">
-            Commencer l'Entraînement
+    <div id="chat-toggle-wrapper">
+        <button id="chat-toggle-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 relative">
+            <span class="text-xs">💬</span>
+            <span id="chat-notif" class="notif-dot hidden"></span>
         </button>
-        <div class="text-center mt-6">
-            <button data-action="back-to-main" class="text-gray-400 hover:text-white text-sm">Annuler</button>
+    </div>
+
+    <!-- Chat -->
+    <div id="chat-window" class="chat-window">
+        <div class="p-2 border-b border-gray-700 bg-indigo-900/30 rounded-t-xl flex justify-between items-center">
+            <h3 class="font-bold text-xs uppercase tracking-wide text-gray-300">Campus Talk</h3>
+            <button id="close-chat-btn" class="text-gray-400 hover:text-white">✕</button>
+        </div>
+        <div id="chat-messages" class="chat-messages custom-scroll flex flex-col"></div>
+        <div class="p-2 border-t border-gray-700 flex gap-2">
+            <input type="text" id="chat-input" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:border-indigo-500 outline-none" placeholder="Message...">
+            <button id="send-chat-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-xs font-bold">></button>
         </div>
     </div>
 
-    <!-- --- MAIN APP CONTAINER --- -->
-    <div id="app-container" class="hidden w-full max-w-5xl mx-auto bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 md:p-8 border border-gray-800 z-10">
-        <header class="flex justify-between items-center mb-6">
-             <button id="back-button" class="text-gray-400 hover:text-white text-sm font-semibold bg-gray-800 hover:bg-gray-700 py-2 px-4 rounded-lg transition-colors">← Quitter</button>
-            <h1 id="app-title" class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400"></h1>
-            <div class="w-20"></div>
-        </header>
-        <div id="game-ui-bar" class="hidden grid grid-cols-3 gap-4 mb-6 bg-black/30 p-3 rounded-xl border border-gray-800">
-            <div class="text-center"><div class="text-xs text-gray-500 uppercase">Score</div><div id="score-display" class="font-mono text-xl text-yellow-400 font-bold">0/0</div></div>
-            <div class="text-center"><div class="text-xs text-gray-500 uppercase">Temps</div><div id="timer-display" class="font-mono text-xl text-sky-400 font-bold">--</div></div>
-            <div class="text-center"><div class="text-xs text-gray-500 uppercase">Vies</div><div id="lives-display" class="flex justify-center gap-1 text-lg">❤️❤️❤️</div></div>
-        </div>
-        <div id="review-lesson-box" class="hidden bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-4 mb-6">
-            <div class="flex items-start gap-3">
-                <div class="text-2xl">💡</div>
-                <div class="flex-1">
-                    <h3 class="text-indigo-300 font-bold text-sm mb-2 uppercase tracking-wide">Rappel de la séance :</h3>
-                    <div id="lesson-content" class="text-sm text-gray-300 space-y-1 max-h-24 overflow-y-auto lesson-scroll pr-2"></div>
+    <div class="app-layout">
+        <!-- CENTER CONTENT -->
+        <div class="main-center">
+            
+            <!-- LOGIN -->
+            <div id="login-screen" class="w-full max-w-3xl flex flex-col items-center justify-center animate-fade-in">
+                <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400 mb-8 tracking-tight">INTERVALLES TRAINER</h1>
+                <div id="user-selection-container" class="w-full flex justify-center">
+                    <div id="users-list" class="flex flex-wrap justify-center gap-3 max-w-2xl">
+                        <div id="show-create-profile-btn" class="aspect-square bg-gray-800/30 hover:bg-gray-800 border border-dashed border-gray-600 hover:border-sky-400 rounded-xl flex flex-col items-center justify-center p-2 cursor-pointer transition-all group">
+                            <div class="w-8 h-8 rounded-full bg-gray-700 group-hover:bg-sky-500 flex items-center justify-center text-lg font-bold text-gray-400 group-hover:text-white mb-1 transition-colors">+</div>
+                            <span class="text-[9px] font-bold text-gray-400 group-hover:text-white">Nouveau</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div id="main-menu" class="hidden w-full max-w-4xl flex flex-col md:flex-row gap-4 items-stretch h-full max-h-[450px] animate-fade-in">
+                <div class="w-full md:w-1/2 flex flex-col gap-3">
+                    <div class="glass-panel p-4 rounded-xl border-l-2 border-sky-500">
+                        <h2 class="text-lg font-bold text-white">Salut <span id="display-username" class="text-sky-400"></span></h2>
+                        <p class="text-slate-400 text-[10px]">Prêt à progresser ?</p>
+                    </div>
+
+                    <button id="start-review-path-btn" class="flex-1 group w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-500 text-white p-4 rounded-xl shadow-lg border border-white/10 relative overflow-hidden text-left flex justify-between items-center">
+                        <div>
+                            <div class="text-lg font-black italic">AVENTURE</div>
+                            <div id="adventure-progress-text" class="text-[9px] bg-black/20 px-2 py-0.5 rounded inline-block mt-1">Chargement...</div>
+                        </div>
+                        <span class="text-3xl filter drop-shadow-lg">🗺️</span>
+                    </button>
+
+                    <button id="open-challenge-btn" class="flex-1 group w-full bg-slate-800 text-slate-500 p-4 rounded-xl border border-slate-700 cursor-not-allowed relative overflow-hidden text-left flex justify-between items-center">
+                        <div>
+                            <div class="text-lg font-bold flex items-center gap-2">CHALLENGE <span class="text-[8px] bg-slate-700 px-1 rounded">Verrouillé</span></div>
+                            <div class="text-[9px] mt-1">Finir l'Aventure</div>
+                        </div>
+                        <span class="text-2xl opacity-30">🔒</span>
+                    </button>
+                    
+                    <div class="flex justify-between items-center px-1">
+                        <button id="btn-brain-info" class="text-[9px] text-indigo-400 hover:text-indigo-300">🧠 Neuro-Pédagogie</button>
+                        <button id="logout-btn" class="text-[9px] text-red-400 hover:text-red-300">Changer de profil</button>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-1/2 glass-panel p-4 rounded-xl shadow-xl flex flex-col">
+                    <h3 class="text-[10px] font-bold text-white mb-2 flex justify-between items-center border-b border-slate-700/50 pb-1">
+                        <span>📊 Progression Challenge</span>
+                        <span class="text-[8px] text-yellow-500 bg-yellow-500/10 px-1.5 rounded">Obj: 30</span>
+                    </h3>
+                    <div class="relative flex-1 w-full min-h-0"><canvas id="progressionChart"></canvas></div>
+                    <p id="chart-loading" class="text-center text-slate-500 text-[9px] mt-1 hidden">Chargement...</p>
+                </div>
+            </div>
+
+            <!-- CHALLENGE SELECT -->
+            <div id="challenge-selection-menu" class="hidden w-full max-w-sm mx-auto text-center z-10 animate-fade-in">
+                <h2 class="text-2xl font-black text-white mb-4 italic">DIFFICULTÉ</h2>
+                <div class="space-y-2">
+                    <button data-challenge="bronze" class="challenge-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 p-2 rounded-lg flex items-center justify-between group">
+                        <span class="text-xl">🥉</span><div class="text-left flex-1 ml-3"><div class="text-sm font-bold text-amber-100">Bronze</div><div class="text-[9px] text-slate-400">10 pts • 3 Vies</div></div>
+                    </button>
+                    <button data-challenge="silver" class="challenge-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 p-2 rounded-lg flex items-center justify-between group">
+                        <span class="text-xl">🥈</span><div class="text-left flex-1 ml-3"><div class="text-sm font-bold text-slate-200">Argent</div><div class="text-[9px] text-slate-400">20 pts • 3 Vies</div></div>
+                    </button>
+                    <button data-challenge="gold" class="challenge-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 p-2 rounded-lg flex items-center justify-between group">
+                        <span class="text-xl">🥇</span><div class="text-left flex-1 ml-3"><div class="text-sm font-bold text-yellow-400">Or</div><div class="text-[9px] text-slate-400">30 pts • 3 Vies</div></div>
+                    </button>
+                </div>
+                <button id="back-to-main-btn-chall" class="mt-4 text-slate-500 hover:text-white text-[10px]">← Retour</button>
+            </div>
+
+            <!-- PATH SCREEN (MODIFIED PADDING & SCROLL) -->
+            <div id="review-path-menu" class="hidden w-full max-w-3xl mx-auto glass-panel rounded-xl shadow-2xl border-0 z-10 h-[90vh] flex flex-col relative">
+                <div class="bg-slate-900/80 backdrop-blur p-2 flex justify-between items-center border-b border-slate-800 z-20">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2 ml-2">🗺️ Aventure</h2>
+                    <button id="back-to-main-btn-path" class="text-slate-400 hover:text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-800">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scroll relative bg-[#0f172a]" id="path-container-wrapper">
+                     <div class="path-container-inner max-w-md mx-auto" id="path-container"></div>
+                </div>
+            </div>
+
+            <!-- GAME UI -->
+            <div id="app-container" class="hidden w-full max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl p-3 border-0 z-10 flex flex-col h-[85vh] md:h-auto">
+                <header class="flex justify-between items-center mb-2 flex-shrink-0">
+                     <button id="back-button" class="text-slate-400 hover:text-white text-[9px] font-bold bg-slate-800 px-2 py-1 rounded">QUITTER</button>
+                    <h1 id="app-title" class="text-xs font-black italic text-sky-400 truncate mx-2"></h1>
+                    <div class="w-8"></div>
+                </header>
+                <!-- Added missing ID for text progress -->
+                <div id="review-progress-bar-container" class="hidden w-full bg-slate-800 rounded-full h-3 mb-2 overflow-hidden relative border border-slate-700">
+                    <div id="review-progress-fill" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-[8px] font-bold uppercase tracking-widest text-white drop-shadow-md">
+                         Maîtrise <span id="review-progress-text" class="ml-1">0/30</span>
+                    </div>
+                </div>
+                <div id="game-ui-bar" class="hidden grid grid-cols-3 gap-2 mb-2 bg-slate-900/50 p-1 rounded flex-shrink-0">
+                    <div class="text-center"><div class="text-[8px] text-slate-500">SCORE</div><div id="score-display" class="font-mono text-sm text-yellow-400 font-bold">0</div></div>
+                    <div class="text-center"><div class="text-[8px] text-slate-500">TEMPS</div><div id="timer-display" class="font-mono text-sm text-sky-400 font-bold">--</div></div>
+                    <div class="text-center"><div class="text-[8px] text-slate-500">VIES</div><div id="lives-display" class="flex justify-center gap-0.5 text-[10px] mt-0.5">❤️❤️❤️</div></div>
+                </div>
+                <div id="review-lesson-box" class="hidden bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-2 mb-3 flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="text-lg bg-indigo-500/20 rounded p-1">💡</div>
+                        <div class="flex-1 overflow-hidden"><div id="lesson-content" class="text-[10px] text-gray-300 whitespace-nowrap overflow-x-auto custom-scroll flex gap-2"></div></div>
+                    </div>
+                </div>
+                <div class="relative bg-black/40 p-2 rounded shadow-inner mb-2 overflow-x-auto custom-scroll border border-slate-800 flex-shrink-0">
+                    <div id="guitar-neck" class="relative min-w-[600px]"></div>
+                </div>
+                <div id="training-section-controls" class="hidden flex-1 flex flex-col justify-center">
+                     <div class="flex items-center justify-center gap-3 mb-2">
+                         <button id="replay-sound-btn" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow">🔊</button>
+                         <div class="text-center w-32"><p class="text-xs font-bold text-white">Intervalle ?</p><p id="feedback-message" class="text-[10px] h-3 font-bold text-slate-400"></p></div>
+                         <button id="new-question-btn" class="bg-slate-700 text-slate-400 font-bold py-1.5 px-3 rounded text-[10px] btn-disabled">Suivant</button>
+                     </div>
+                     <div id="answer-buttons" class="grid grid-cols-2 gap-2 content-center"></div>
                 </div>
             </div>
         </div>
-        <div class="bg-black/40 p-4 rounded-xl shadow-inner mb-6 overflow-x-auto">
-            <div id="guitar-neck" class="relative min-w-[800px]"></div>
-        </div>
-        <div id="training-section-controls" class="hidden">
-             <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                 <div class="flex items-center gap-3">
-                     <button id="replay-sound-btn" class="bg-sky-700 hover:bg-sky-600 text-white p-3 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95" title="Réécouter l'intervalle">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-                     </button>
-                     <div>
-                         <p id="question-title" class="text-lg md:text-xl font-bold text-white">Quel est cet intervalle ?</p>
-                         <p id="feedback-message" class="text-sm h-5 font-semibold"></p>
-                     </div>
-                 </div>
-                 <button id="new-question-btn" class="w-full md:w-auto bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all border-b-4 border-sky-800 active:border-b-0 active:translate-y-1 btn-disabled">Suivant →</button>
-             </div>
-             <div id="answer-buttons" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
-        </div>
-    </div>
 
-    <!-- --- MODALS --- -->
-    
-    <!-- PIN Modal -->
-    <div id="pin-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[60] p-4 modal-enter">
-        <div class="bg-gray-900 rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-sm modal-content-enter border border-red-900">
-            <h2 class="text-xl font-bold text-red-500 mb-4 text-center uppercase tracking-widest">Sécurité Admin</h2>
-            <p class="text-gray-400 text-center mb-4 text-sm">Entrez le code PIN.</p>
-            <div class="flex justify-center mb-6">
-                <input type="password" id="pin-input" maxlength="8" class="bg-gray-800 text-white text-center text-2xl tracking-widest p-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none w-3/4" placeholder="••••••••">
-            </div>
-            <div class="flex gap-3">
-                <button id="cancel-pin-btn" class="flex-1 bg-gray-800 text-gray-400 hover:bg-gray-700 py-2 rounded-lg text-sm font-bold">Annuler</button>
-                <button id="validate-pin-btn" class="flex-1 bg-red-700 text-white hover:bg-red-600 py-2 rounded-lg text-sm font-bold">Valider</button>
+        <!-- SIDEBAR RIGHT (COMPACT & TIGHT) -->
+        <div id="app-sidebar" class="sidebar-container fixed top-0 right-0 bottom-0 w-[200px] lg:relative lg:w-auto lg:block hidden transform lg:transform-none transition-transform z-40">
+            <div class="sidebar-content h-full sidebar-glass border-l border-white/5 flex flex-col">
+                <div class="p-2 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                    <h3 class="text-slate-500 font-bold text-[9px] uppercase">Activité Campus</h3>
+                    <button id="close-sidebar-mobile" class="lg:hidden text-slate-400 hover:text-white text-xs">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scroll p-0" id="sidebar-feed"></div>
             </div>
         </div>
+        
+        <button id="toggle-sidebar-btn" class="fixed top-4 right-4 lg:hidden z-40 bg-slate-800 text-white p-2 rounded shadow border border-slate-600">📡</button>
     </div>
 
-    <!-- Confirm Delete Modal -->
-    <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[60] p-4 modal-enter">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm modal-content-enter border border-red-600">
-            <div class="text-center mb-4">
-                <span class="text-4xl">⚠️</span>
-            </div>
-            <h2 class="text-xl font-bold text-white mb-2 text-center">Êtes-vous sûr ?</h2>
-            <p class="text-gray-400 text-center mb-6 text-sm">Cette action supprimera définitivement le membre <span id="delete-target-name" class="text-white font-bold"></span>.</p>
-            <div class="flex gap-3">
-                <button id="cancel-delete-btn" class="flex-1 bg-gray-700 text-white hover:bg-gray-600 py-3 rounded-lg font-bold">Annuler</button>
-                <button id="confirm-delete-btn" class="flex-1 bg-red-600 text-white hover:bg-red-500 py-3 rounded-lg font-bold shadow-lg">Supprimer</button>
-            </div>
-        </div>
-    </div>
+    <!-- MODALS -->
+    <div id="create-profile-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[70]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-slate-700"><h2 class="text-sm font-bold text-white mb-4">Nouveau Profil</h2><input type="text" id="new-username-input" class="w-full bg-black/50 text-white p-2 rounded border border-slate-600 text-xs mb-4" placeholder="Prénom"><div class="grid grid-cols-2 gap-2"><button id="cancel-create-profile" class="bg-slate-800 text-slate-300 py-1 rounded text-xs">Annuler</button><button id="confirm-create-profile" class="bg-sky-600 text-white py-1 rounded text-xs font-bold">Créer</button></div></div></div>
+    <div id="error-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[80]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-red-900/50"><div class="text-4xl mb-2">👀</div><h2 class="text-sm font-bold text-white">Regarde bien !</h2><p class="text-slate-400 text-[10px] mb-4">Compte les cases...</p><button id="close-error-btn" class="w-full bg-white text-black py-1.5 rounded text-xs font-bold">OK</button></div></div>
+    <div id="pin-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-yellow-900/30"><h2 class="text-xs font-bold text-white mb-4">Admin PIN</h2><input type="password" id="pin-input" class="w-full bg-black/50 text-white text-center p-2 rounded border border-slate-600 mb-4" placeholder="••••"><div class="grid grid-cols-2 gap-2"><button id="cancel-pin-btn" class="bg-slate-800 text-white py-1 rounded text-xs">Annuler</button><button id="validate-pin-btn" class="bg-yellow-700 text-black py-1 rounded text-xs font-bold">Go</button></div></div></div>
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Mode</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div></div></div></div>
+    <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[70]"><div class="bg-slate-900 border border-red-900 rounded-xl p-6 w-64 text-center"><h2 class="text-sm font-bold text-white mb-2">Confirmer ?</h2><p id="delete-message" class="text-slate-400 text-[10px] mb-4"></p><div class="flex gap-2"><button id="cancel-delete-btn" class="flex-1 bg-slate-800 text-white py-1 rounded text-xs">Non</button><button id="confirm-delete-btn" class="flex-1 bg-red-800 text-white py-1 rounded text-xs">Oui</button></div></div></div>
+    <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
+    <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
 
-    <!-- Admin Panel Modal -->
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl modal-content-enter border border-gray-700 h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><span class="text-red-500">🛡️</span> Gestion des Membres</h2>
-                <button id="close-admin-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">Supprimez les comptes inactifs ou erronés.</p>
-            <div id="admin-users-list" class="flex-1 overflow-y-auto lesson-scroll bg-gray-900/50 rounded-xl p-2 border border-gray-700"></div>
-        </div>
-    </div>
-
-    <div id="brain-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg modal-content-enter border border-gray-700">
-            <div class="flex items-center gap-3 mb-6"><span class="text-4xl">🧠</span><h2 class="text-2xl font-bold text-white">Boostez votre apprentissage</h2></div>
-            <div class="space-y-5 text-gray-300 text-base">
-                <div class="bg-gray-700/50 p-4 rounded-xl border-l-4 border-sky-500"><h3 class="font-bold text-sky-400 mb-1">La Myéline</h3><p class="text-sm">Répéter juste = "autoroute neuronale". Votre cerveau isole les circuits utilisés pour aller plus vite.</p></div>
-                <div class="bg-gray-700/50 p-4 rounded-xl border-l-4 border-green-500"><h3 class="font-bold text-green-400 mb-1">Répétition Espacée</h3><p class="text-sm">Mieux vaut <strong class="text-white">30 min plusieurs fois</strong> qu'une seule session de 3h. Le sommeil consolide tout.</p></div>
-                <div class="bg-gray-700/50 p-4 rounded-xl border-l-4 border-pink-500"><h3 class="font-bold text-pink-400 mb-1">L'Erreur est utile</h3><p class="text-sm">Se tromper permet au cerveau de calibrer. N'ayez pas peur de l'échec, il fait partie du processus.</p></div>
-            </div>
-            <button id="close-brain-btn" class="w-full bg-white text-gray-900 hover:bg-gray-200 font-bold py-3 px-6 rounded-xl mt-8 transition-colors">C'est noté !</button>
-        </div>
-    </div>
-
-    <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md text-center modal-content-enter border border-gray-700">
-            <h2 id="end-game-title" class="text-3xl font-bold mb-2"></h2>
-            <div id="end-game-message" class="text-gray-300 mb-8 text-lg"></div>
-            <div id="end-game-buttons" class="flex flex-col gap-3"></div>
-        </div>
-    </div>
-
-    <footer class="mt-8 text-center text-gray-500 text-xs font-medium tracking-wider relative z-10">© GUITARE IMPRO ACADÉMIE</footer>
-
-    <!-- Firebase Config -->
+    <!-- Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI",
-            authDomain: "intervalles-d644e.firebaseapp.com",
-            projectId: "intervalles-d644e",
-            storageBucket: "intervalles-d644e.firebasestorage.app",
-            messagingSenderId: "886936254900",
-            appId: "1:886936254900:web:d9bf38fe5d537c6e84dae1"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = 'gia-trainer-v1';
+        const firebaseConfig = { apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI", authDomain: "intervalles-d644e.firebaseapp.com", projectId: "intervalles-d644e", storageBucket: "intervalles-d644e.firebasestorage.app", messagingSenderId: "886936254900", appId: "1:886936254900:web:d9bf38fe5d537c6e84dae1" };
+        const ADMIN_SECRET = "MTgwODE5OTA="; 
+        let app, auth, db, appId;
+        try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'gia-trainer-v1'; } catch (e) { console.error(e); }
 
-        // App Logic
-        let currentUserPseudo = localStorage.getItem('gia_username') || '';
-        let existingUsers = []; 
-        let progressChart = null;
-        let userToDelete = null;
-
-        // Auth Init
-        const initAuth = async () => {
-            try {
-                await signInAnonymously(auth);
-                listenForUsers();
-                if(currentUserPseudo) showMainMenu();
-            } catch (error) { console.error("Auth failed", error); }
-        };
-        
+        let currentUserPseudo = '', existingUsers = [], progressChart = null, itemToDelete = null, levelProgressMap = {}, isChatOpen = false;
         const el = (id) => document.getElementById(id);
-        const show = (id) => document.getElementById(id).classList.remove('hidden');
-        const hide = (id) => document.getElementById(id).classList.add('hidden');
+        const show = (id) => { const e = el(id); if(e) e.classList.remove('hidden'); };
+        const hide = (id) => { const e = el(id); if(e) e.classList.add('hidden'); };
+        const safeListener = (id, evt, fn) => { const e = el(id); if(e) e.addEventListener(evt, fn); };
 
-        // --- Users Logic ---
-        function listenForUsers() {
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
-            onSnapshot(q, (snapshot) => {
-                existingUsers = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if(data.pseudo) existingUsers.push({ id: doc.id, pseudo: data.pseudo });
-                });
-                existingUsers.sort((a, b) => a.pseudo.localeCompare(b.pseudo));
-                renderUserList();
-                if(!el('admin-modal').classList.contains('hidden')) renderAdminList();
-            });
+        const initAuth = async () => { try { await signInAnonymously(auth); listenForUsers(); listenForActivityFeed(); listenForChat(); show('login-screen'); hide('main-menu'); } catch (e) {} };
+
+        // --- USERS ---
+        function listenForUsers() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'users')), (snap) => { existingUsers = []; snap.forEach(d => existingUsers.push({id:d.id, ...d.data()})); existingUsers.sort((a,b)=>a.pseudo.localeCompare(b.pseudo)); renderUserGrid(); if(!el('admin-modal').classList.contains('hidden')) renderAdminUsers(); }); }
+        function renderUserGrid() { 
+            const c = el('users-list'), btn = el('show-create-profile-btn'); c.innerHTML=''; c.appendChild(btn); 
+            existingUsers.forEach(u => { const d=document.createElement('div'); d.className='w-20 h-20 bg-slate-800/50 hover:bg-slate-800 text-center p-2 rounded-xl border border-slate-700 hover:border-sky-500 cursor-pointer group flex flex-col items-center justify-center gap-1'; d.onclick=()=>finalizeLogin(u.pseudo, u.id); d.innerHTML=`<div class="w-8 h-8 rounded-full bg-slate-700 group-hover:bg-sky-600 flex items-center justify-center text-xs font-bold text-white">${u.pseudo.charAt(0).toUpperCase()}</div><div class="font-bold text-[9px] text-slate-400 group-hover:text-white truncate w-full">${u.pseudo}</div>`; c.appendChild(d); }); 
+        }
+        
+        safeListener('show-create-profile-btn', 'click', ()=>{ el('new-username-input').value=''; show('create-profile-modal'); });
+        safeListener('cancel-create-profile', 'click', ()=>hide('create-profile-modal'));
+        safeListener('confirm-create-profile', 'click', async ()=>{ const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
+
+        async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); showMainMenu(); }
+
+        // --- FEED ---
+        function listenForActivityFeed() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { const s = []; snap.forEach(d => s.push(d.data())); s.sort((a,b)=>b.timestamp-a.timestamp); renderSidebar(s); }); }
+        function renderSidebar(s) { 
+            const c = el('sidebar-feed'); c.innerHTML = ''; 
+            s.slice(0,50).forEach(x => { 
+                const d = document.createElement('div'); d.className = 'feed-item';
+                let mode = x.mode.replace("Niveau", "Niv").replace("Challenge", "Chall");
+                let icon = (x.score >= (x.total||30)) ? '🎉' : '';
+                let initial = x.pseudo.charAt(0).toUpperCase();
+                // Compact layout: Avatar | Name • Mode ScoreIcon
+                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-3 h-3 rounded-full bg-indigo-600 flex items-center justify-center text-[6px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300">${x.pseudo} <span class="text-slate-500">• ${mode}</span></span><span class="${icon?'text-green-400':'text-yellow-500'} font-bold ml-1 flex items-center">${x.score} <span class="text-[8px] ml-0.5">${icon}</span></span></div></div>`;
+                c.appendChild(d); 
+            }); 
         }
 
-        function renderUserList() {
-            const container = el('users-list');
-            const wrapper = el('user-selection-container');
-            container.innerHTML = '';
-            const uniquePseudos = [...new Set(existingUsers.map(u => u.pseudo))];
-            if (uniquePseudos.length > 0) {
-                wrapper.classList.remove('hidden');
-                uniquePseudos.forEach(pseudoName => {
-                    const btn = document.createElement('button');
-                    btn.textContent = pseudoName;
-                    btn.className = 'user-card bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all border border-gray-600 text-left truncate shadow-md hover:border-sky-400 cursor-pointer';
-                    btn.onclick = () => attemptLogin(pseudoName);
-                    container.appendChild(btn);
-                });
-            } else { wrapper.classList.add('hidden'); }
-        }
+        // --- CHAT ---
+        function listenForChat() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages')), (snap) => { const m = []; snap.forEach(d => m.push(d.data())); m.sort((a,b)=>a.timestamp-b.timestamp); renderChat(m); if(!isChatOpen && m.length>0) el('chat-notif').classList.remove('hidden'); }); }
+        function renderChat(m) { const c = el('chat-messages'); c.innerHTML = '<div class="text-center text-slate-600 text-[9px] italic my-2">Bienvenue !</div>'; m.forEach(msg => { const d = document.createElement('div'); d.className = `chat-message ${msg.user===currentUserPseudo?'mine':''}`; d.innerHTML = `<span class="font-bold text-indigo-300 mr-1">${msg.user}:</span>${msg.text}`; c.appendChild(d); }); c.scrollTop = c.scrollHeight; }
+        safeListener('send-chat-btn', 'click', sendChat); safeListener('chat-input', 'keypress', (e)=>{if(e.key==='Enter') sendChat()});
+        async function sendChat() { const t = el('chat-input').value.trim(); if(!t || !db || !currentUserPseudo) return; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages'), {user:currentUserPseudo, text:t, timestamp:Date.now()}); el('chat-input').value=''; }
+        safeListener('chat-toggle-btn', 'click', ()=>{ const w = el('chat-window'); if(w.classList.contains('open')) { w.classList.remove('open'); isChatOpen=false; } else { w.classList.add('open'); isChatOpen=true; el('chat-notif').classList.add('hidden'); } });
+        safeListener('close-chat-btn', 'click', ()=>{ el('chat-window').classList.remove('open'); isChatOpen=false; });
 
-        function saveUserToDB(pseudo) {
-            const exists = existingUsers.some(u => u.pseudo.toLowerCase() === pseudo.toLowerCase());
-            if (!exists) {
-                addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {
-                    pseudo: pseudo,
-                    createdAt: Date.now()
-                });
-            }
-        }
+        // --- LOGIC ---
+        async function fetchUserScores() { if(!db) return; const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')); const snap = await getDocs(q); levelProgressMap = {}; snap.forEach(d => { const data = d.data(); if(data.pseudo === currentUserPseudo && data.mode.startsWith('Niveau') && data.score>=30) { const m = data.mode.match(/Niveau (\d+)/); if(m) { const l = parseInt(m[1]); levelProgressMap[l] = (levelProgressMap[l]||0)+1; } } }); }
 
-        function attemptLogin(name) {
-            const cleanName = name.trim();
-            if(!cleanName) { alert("Prénom vide !"); return; }
-            finalizeLogin(cleanName);
-        }
+        // Sidebar Mobile
+        safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
+        // On resize reset
+        window.addEventListener('resize', ()=>{ if(window.innerWidth>=1024) el('app-sidebar').style.display='block'; else el('app-sidebar').style.display='none'; });
 
-        function finalizeLogin(name) {
-            currentUserPseudo = name;
-            localStorage.setItem('gia_username', name);
-            saveUserToDB(name); 
-            showMainMenu();
-        }
+        // Admin
+        async function checkPin(i) { try { return btoa(i)===ADMIN_SECRET; } catch { return false; } }
+        safeListener('admin-access-btn', 'click', ()=>{show('pin-modal'); el('pin-input').value='';});
+        safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
+        safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
+        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions);
+        function switchAdminTab(t) { if(t==='users'){ show('admin-users-view'); hide('admin-sessions-view'); renderAdminUsers(); } else { hide('admin-users-view'); show('admin-sessions-view'); renderAdminSessions(); } }
+        function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
+        async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
+        function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
+        safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
+        safeListener('confirm-delete-btn', 'click', async ()=>{ if(itemToDelete){ try{ await deleteDoc(doc(db,'artifacts',appId,'public','data',itemToDelete.t==='user'?'users':'scores',itemToDelete.id)); }catch(e){alert(e);} hide('confirm-delete-modal'); if(itemToDelete.t==='user') renderAdminUsers(); else renderAdminSessions(); } });
 
-        el('login-btn').addEventListener('click', () => attemptLogin(el('username-input').value));
+        safeListener('logout-btn', 'click', ()=>{ currentUserPseudo=''; show('login-screen'); hide('main-menu'); });
 
-        // --- Admin Panel Logic ---
-        el('admin-access-btn').addEventListener('click', () => {
-            show('pin-modal'); el('pin-input').value = ''; el('pin-input').focus();
-        });
+        window.saveScoreToFirebase = async (s, m, t) => { if(!db||!currentUserPseudo)return; try{ await addDoc(collection(db,'artifacts',appId,'public','data','scores'), {pseudo:currentUserPseudo, score:s, total:t, mode:m, timestamp:Date.now()}); if(m.startsWith("Niveau") && s>=30){ const ma = m.match(/Niveau (\d+)/); if(ma) levelProgressMap[parseInt(ma[1])] = (levelProgressMap[parseInt(ma[1])]||0)+1; } }catch(e){} };
+        window.getLevelProgress = () => levelProgressMap;
 
-        el('validate-pin-btn').addEventListener('click', () => {
-             if(el('pin-input').value === '18081990') {
-                hide('pin-modal'); show('admin-modal'); renderAdminList();
-            } else { alert("Code erroné !"); }
-        });
-        el('cancel-pin-btn').addEventListener('click', () => hide('pin-modal'));
-        el('close-admin-btn').addEventListener('click', () => hide('admin-modal'));
-
-        function renderAdminList() {
-            const container = el('admin-users-list');
-            container.innerHTML = '';
-            if(existingUsers.length === 0) { container.innerHTML = '<p class="text-gray-500 text-center p-4">Aucun membre.</p>'; return; }
-            existingUsers.forEach(user => {
-                const row = document.createElement('div');
-                row.className = 'flex justify-between items-center bg-gray-800 p-3 rounded-lg mb-2 border border-gray-700';
-                const nameSpan = document.createElement('span');
-                nameSpan.textContent = user.pseudo;
-                nameSpan.className = 'text-white font-bold';
-                const delBtn = document.createElement('button');
-                delBtn.innerHTML = '🗑️';
-                delBtn.className = 'bg-red-900/50 hover:bg-red-600 text-white p-2 rounded transition-colors cursor-pointer';
-                delBtn.title = "Supprimer ce membre";
-                delBtn.addEventListener('click', (e) => { e.stopPropagation(); promptDelete(user.id, user.pseudo); });
-                row.appendChild(nameSpan); row.appendChild(delBtn); container.appendChild(row);
-            });
-        }
-
-        function promptDelete(docId, pseudo) {
-            userToDelete = { id: docId, pseudo: pseudo };
-            el('delete-target-name').textContent = pseudo;
-            show('confirm-delete-modal');
-        }
-
-        el('cancel-delete-btn').addEventListener('click', () => { hide('confirm-delete-modal'); userToDelete = null; });
-        el('confirm-delete-btn').addEventListener('click', async () => {
-            if(userToDelete) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', userToDelete.id));
-                    hide('confirm-delete-modal');
-                } catch(e) { console.error(e); alert("Erreur suppression"); }
-            }
-        });
-
-        el('logout-btn').addEventListener('click', () => {
-            currentUserPseudo = '';
-            localStorage.removeItem('gia_username');
-            hide('main-menu'); show('login-screen'); el('username-input').value = '';
-        });
-
+        // MAIN UI
+        let progressChartRef = null;
         function showMainMenu() {
-            el('display-username').textContent = currentUserPseudo;
-            hide('login-screen'); hide('challenge-selection-menu'); hide('review-setup-screen'); hide('app-container');
-            show('main-menu'); loadChartData();
+            el('display-username').textContent = currentUserPseudo; hide('login-screen'); hide('challenge-selection-menu'); hide('app-container'); hide('review-path-menu'); show('main-menu');
+            const maxLvl = Object.keys(levelProgressMap).reduce((a,b)=>Math.max(a, parseInt(b)), 0);
+            el('adventure-progress-text').textContent = `Niveau ${Math.min(maxLvl + 1, 12)} / 12`;
+            const unlocked = (levelProgressMap[12]||0)>=3;
+            const btn = el('open-challenge-btn');
+            if(unlocked) { btn.className = 'flex-1 group w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-4 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; btn.innerHTML = `<div><div class="text-lg font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; btn.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); }; }
+            else { btn.onclick=null; }
+            loadChartData();
         }
 
-        // --- Chart Logic (Optimized: Max score per day) ---
         function loadChartData() {
-            el('chart-loading').classList.remove('hidden');
-            if (progressChart) { progressChart.destroy(); progressChart = null; }
-
+            if(!db) return; 
+            // Safety Check to prevent crash
+            const loader = el('chart-loading');
+            if(loader) loader.classList.remove('hidden'); 
+            
+            if(progressChartRef) { progressChartRef.destroy(); progressChartRef = null; }
+            
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
             
             onSnapshot(q, (snapshot) => {
-                const rawScores = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.pseudo && data.pseudo.toLowerCase() === currentUserPseudo.toLowerCase()) {
-                        rawScores.push(data);
+                const scores = []; 
+                snapshot.forEach(doc => { 
+                    const d = doc.data(); 
+                    if(d.pseudo === currentUserPseudo && d.mode.includes("Challenge")) {
+                        scores.push(d); 
                     }
                 });
-
-                // GROUP BY DAY and TAKE MAX SCORE
-                const scoresByDay = {};
-                rawScores.forEach(item => {
-                    const dateKey = new Date(item.timestamp).toLocaleDateString('fr-FR'); // Group by local date string
-                    if (!scoresByDay[dateKey] || item.score > scoresByDay[dateKey].score) {
-                        scoresByDay[dateKey] = { score: item.score, timestamp: item.timestamp };
-                    }
+                
+                const dayBest = {}; 
+                scores.forEach(s => { 
+                    const d = new Date(s.timestamp).toISOString().split('T')[0]; 
+                    if(!dayBest[d] || s.score > dayBest[d].score) dayBest[d] = s; 
                 });
-
-                // Convert back to array and sort
-                const aggregatedScores = Object.values(scoresByDay).sort((a, b) => a.timestamp - b.timestamp);
-
-                renderChart(aggregatedScores);
-                el('chart-loading').classList.add('hidden');
-            }, (error) => { console.error("Error loading scores:", error); el('chart-loading').textContent = "Erreur de chargement."; });
-        }
-
-        function renderChart(data) {
-            if (progressChart) { progressChart.destroy(); progressChart = null; }
-            const ctx = el('progressionChart').getContext('2d');
-            const labels = data.map(d => new Date(d.timestamp).toLocaleDateString(undefined, {day:'numeric', month:'numeric'}));
-            const dataPoints = data.map(d => d.score);
-            const goalLine = Array(data.length).fill(30);
-
-            progressChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Meilleur Score',
-                            data: dataPoints,
-                            borderColor: '#0ea5e9', 
-                            backgroundColor: 'rgba(14, 165, 233, 0.2)',
-                            tension: 0.3,
-                            fill: true,
-                            pointRadius: 5,
-                            pointHoverRadius: 7
-                        },
-                        {
-                            label: 'Objectif',
-                            data: goalLine,
-                            borderColor: '#fbbf24',
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            borderWidth: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#9ca3af' } } },
-                    scales: {
-                        y: { beginAtZero: true, max: 35, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { color: 'transparent' }, ticks: { color: '#9ca3af' } }
-                    }
-                }
+                
+                const sorted = Object.values(dayBest).sort((a,b) => a.timestamp - b.timestamp); 
+                renderChart(sorted); 
+                
+                if(loader) loader.classList.add('hidden');
             });
         }
 
-        window.saveScoreToFirebase = async (score, mode) => {
-            if(!currentUserPseudo) return;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'scores'), {
-                    pseudo: currentUserPseudo, score: score, total: 30, mode: mode, timestamp: Date.now()
-                });
-            } catch (e) { console.error("Error saving score:", e); }
-        };
+        function renderChart(data) {
+            const canvas = el('progressionChart'); if(!canvas) return; const ctx = canvas.getContext('2d');
+            const labels = data.map(d => new Date(d.timestamp).toLocaleDateString('fr-FR', {day:'numeric', month:'short'}));
+            const vals = data.map(d => d.score);
+            const goal = Array(data.length).fill(30);
+            progressChartRef = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Score', data: vals, borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', tension: 0.4, fill: true, pointRadius: 4 }, { label: 'Objectif', data: goal, borderColor: '#eab308', borderDash: [5, 5], pointRadius: 0, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero: true, max: 35, grid: {color:'rgba(255,255,255,0.05)'}, ticks:{font:{size:8}, color:'#6b7280'} }, x: { display:false } } } });
+        }
 
         initAuth();
     </script>
 
+    <!-- Game Script -->
     <script>
-        // --- GAME SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
-            const NUM_STRINGS = 6, NUM_FRETS = 15;
-            const SEARCH_ZONE_RADIUS = 4;
-            const STRING_SEARCH_RADIUS = 2;
-            const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-            const NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-            const NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-            const TUNING_SEMITONES_FROM_C0 = [40, 45, 50, 55, 59, 64];
+            const NUM_STRINGS=6, NUM_FRETS=15;
+            const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            const NOTES_FLAT=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+            const TUNING=[40,45,50,55,59,64]; 
+            const INTERVALS_DATA={'2m':{val:1,desc:"2m"},'2M':{val:2,desc:"2M"},'3m':{val:3,desc:"3m"},'3M':{val:4,desc:"3M"},'4J':{val:5,desc:"4J"},'5dim':{val:6,desc:"5b"},'5J':{val:7,desc:"5J"},'6m':{val:8,desc:"6m"},'6M':{val:9,desc:"6M"},'7m':{val:10,desc:"7m"},'7M':{val:11,desc:"7M"},'8J':{val:12,desc:"8J"}};
+            const INTERVALS={}; Object.keys(INTERVALS_DATA).forEach(k=>INTERVALS[k]=INTERVALS_DATA[k].val);
+            const intervalKeys=Object.keys(INTERVALS);
+            const PATH_LEVELS=[
+                {id:1,title:"Octaves",keys:['8J'],icon:"🎯"}, {id:2,title:"Quintes",keys:['5J'],icon:"🚀"}, {id:3,title:"Piliers",keys:['8J','5J'],icon:"🏛️"},
+                {id:4,title:"Tierce M",keys:['3M'],icon:"☀️"}, {id:5,title:"Tierce m",keys:['3m'],icon:"🌧️"}, {id:6,title:"Émotions",keys:['3M','3m'],icon:"🎭"},
+                {id:7,title:"Triades",keys:['8J','5J','3M','3m'],icon:"🧱"}, {id:8,title:"Secondes",keys:['2M','2m'],icon:"🤏"}, {id:9,title:"Sixtes",keys:['6M','6m'],icon:"🎻"},
+                {id:10,title:"Septièmes",keys:['7M','7m'],icon:"🎷"}, {id:11,title:"Triton",keys:['5dim'],icon:"😈"}, {id:12,title:"Total",keys:[...intervalKeys],icon:"🏆"}
+            ];
+            const CHALLENGES={ bronze:{name:'Bronze',goal:10,lives:3,time:180}, silver:{name:'Argent',goal:20,lives:3,time:180}, gold:{name:'Or',goal:30,lives:3,time:120} };
+            const el=(id)=>document.getElementById(id), show=(id)=>el(id).classList.remove('hidden'), hide=(id)=>el(id).classList.add('hidden');
+            let soundReady=false, synth, gameInProgress=false, currentMode, currentChallenge, score, lives, rootNote, targetNote, correctInterval, activeIntervalKeys, timerInterval, timeLeft;
+
+            const initSound=async()=>{ if(!soundReady){ try{ await Tone.start(); synth=new Tone.PolySynth(Tone.AMSynth).toDestination(); synth.volume.value=-2; soundReady=true; }catch(e){} } };
+            const playInterval=async()=>{ if(!soundReady)await initSound(); if(rootNote&&targetNote){ const r=getNote(rootNote), t=getNote(targetNote), now=Tone.now(); synth.triggerAttackRelease(r,"8n",now); synth.triggerAttackRelease(t,"8n",now+0.4); } };
+            const getNote=(n)=>{ const t=TUNING[n.string]+n.fret; return NOTES_SHARP[t%12]+Math.floor(t/12); };
+            const getVal=(n)=>(TUNING[n.string]+n.fret)%12;
+
+            const hideAll=()=>{ ['login-screen','main-menu','challenge-selection-menu','review-path-menu','app-container'].forEach(id=>hide(id)); };
+            const safeListen=(id,evt,fn)=>{ const e=el(id); if(e)e.addEventListener(evt,fn); };
+
+            if(document.querySelector('[data-action="open-challenge-menu"]')) document.querySelector('[data-action="open-challenge-menu"]').addEventListener('click', ()=>{ hideAll(); show('challenge-selection-menu'); });
+            safeListen('start-review-path-btn', 'click', ()=>{ hideAll(); renderPath3D(); show('review-path-menu'); setTimeout(() => { const active = document.querySelector('.path-node-btn.unlocked') || document.querySelector('.path-node-btn.completed:last-of-type'); if(active) active.scrollIntoView({behavior: "smooth", block: "center"}); }, 100); });
+            safeListen('back-to-main-btn-path', 'click', ()=>{ hideAll(); show('main-menu'); });
+            safeListen('back-to-main-btn-chall', 'click', ()=>{ hideAll(); show('main-menu'); });
             
-            const INTERVALS_DATA = {
-                '2m': { val: 1, desc: "Seconde Mineure (1/2 ton) : Dissonant, dents de la mer." },
-                '2M': { val: 2, desc: "Seconde Majeure (1 ton) : Tension douce." },
-                '3m': { val: 3, desc: "Tierce Mineure (1.5 tons) : Triste, mélancolique." },
-                '3M': { val: 4, desc: "Tierce Majeure (2 tons) : Joyeux, lumineux." },
-                '4J': { val: 5, desc: "Quarte Juste (2.5 tons) : Mon beau sapin." },
-                '5dim': { val: 6, desc: "Quinte Diminuée (3 tons) : Le Triton diabolique." },
-                '5J': { val: 7, desc: "Quinte Juste (3.5 tons) : Power Chord, stable." },
-                '6m': { val: 8, desc: "Sixte Mineure (4 tons) : Love Story, romantique." },
-                '6M': { val: 9, desc: "Sixte Majeure (4.5 tons) : Doux, pastorale." },
-                '7m': { val: 10, desc: "Septième Mineure (5 tons) : Funky, Blues." },
-                '7M': { val: 11, desc: "Septième Majeure (5.5 tons) : Planant, nostalgique." },
-                '8J': { val: 12, desc: "Octave (6 tons) : La même note plus aiguë." }
-            };
+            safeListen('back-button', 'click', ()=>{ if(timerInterval)clearInterval(timerInterval); hideAll(); if(currentMode==='challenge')show('challenge-selection-menu'); else if(currentMode==='review'){renderPath3D();show('review-path-menu');} else show('main-menu'); });
+            safeListen('close-error-btn', 'click', ()=>hide('error-modal'));
+
+            function renderPath3D() {
+                const c=el('path-container'), l=document.createElementNS("http://www.w3.org/2000/svg", "svg"); l.setAttribute("class","path-svg-layer"); c.innerHTML=''; c.appendChild(l);
+                const pm=window.getLevelProgress?window.getLevelProgress():{}; const nd=[];
+                PATH_LEVELS.forEach((lvl,i)=>{
+                    const prevS = i>0?(pm[lvl.id-1]||0):3; const locked=prevS<3; const curS=pm[lvl.id]||0; const comp=curS>=3;
+                    const w=document.createElement('div'); w.className='path-node-wrapper'; w.style.transform=`translateX(${i%2===0?'-25px':'25px'})`;
+                    const n=document.createElement('div'); n.className=`path-node-btn ${locked?'locked':(comp?'completed':'unlocked')}`;
+                    let starH=''; if(!locked) starH=`<div class="stars-container"><span class="${curS>=1?'text-yellow-400':'text-gray-600'} text-[6px]">★</span><span class="${curS>=2?'text-yellow-400':'text-gray-600'} text-[6px]">★</span><span class="${curS>=3?'text-yellow-400':'text-gray-600'} text-[6px]">★</span></div>`;
+                    n.innerHTML=`<span class="text-2xl drop-shadow-md">${locked?'🔒':lvl.icon}</span><div class="absolute -top-4 bg-black/60 px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-wide text-gray-300 whitespace-nowrap border border-slate-700">${lvl.title}</div>${starH}`;
+                    n.onclick=()=>{ if(locked)return; let k=[]; for(let j=0;j<=i;j++)k=[...k,...PATH_LEVELS[j].keys]; startReview(lvl.id, [...new Set(k)], `Niveau ${lvl.id} : ${lvl.title}`); };
+                    w.appendChild(n); c.appendChild(w); nd.push(n);
+                });
+                setTimeout(()=>drawSVG(l,nd,c),50);
+            }
+            function drawSVG(s,n,c){ const r=c.getBoundingClientRect(); let p=""; s.setAttribute("height",c.scrollHeight);
+                n.forEach((el,i)=>{ if(i===0){ const b=el.offsetTop; const l=el.offsetLeft; const w=el.offsetWidth; const h=el.offsetHeight; p+=`M ${l+w/2} ${b+h/2} `; } else { const prev=n[i-1].getBoundingClientRect(), curr=el.getBoundingClientRect(); const x1=prev.offsetLeft+prev.offsetWidth/2, y1=prev.top+prev.height/2-r.top, x2=curr.left+curr.width/2-r.left, y2=curr.top+curr.height/2-r.top; p+=`C ${x1} ${y1+(y2-y1)/2}, ${x2} ${y1+(y2-y1)/2}, ${x2} ${y2} `; } });
+                const l1=document.createElementNS("http://www.w3.org/2000/svg","path"); l1.setAttribute("d",p); l1.setAttribute("stroke","#334155"); l1.setAttribute("stroke-width","4"); l1.setAttribute("fill","none"); s.appendChild(l1);
+            }
+
+            const startReview=(id,k,t)=>{ activeIntervalKeys=k; currentMode='review'; score=0; el('app-title').textContent=t; hide('game-ui-bar'); show('training-section-controls'); show('review-lesson-box'); show('review-progress-bar-container'); updateProg(0); el('lesson-content').innerHTML=k.map(x=>`<span class="bg-indigo-900/50 text-indigo-200 px-1 rounded font-mono font-bold">${x}</span>`).join(' '); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
+            const startChallenge=(k)=>{ currentMode='challenge'; currentChallenge={...CHALLENGES[k],key:k}; activeIntervalKeys=[...intervalKeys]; lives=currentChallenge.lives; score=0; el('app-title').textContent=`Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
             
-            const INTERVALS = {}; 
-            Object.keys(INTERVALS_DATA).forEach(k => INTERVALS[k] = INTERVALS_DATA[k].val);
-            const intervalKeys = Object.keys(INTERVALS);
+            const updateProg=(v)=>{ 
+                const p=(v/30)*100; 
+                el('review-progress-fill').style.width=`${p}%`; 
+                // Safety check to prevent error
+                if(el('review-progress-text')) el('review-progress-text').textContent=`${v}/30`; 
+            };
+            const updateScore=()=>{ if(el('score-display')) el('score-display').textContent=`${score}/${currentChallenge.goal}`; };
+            const updateLives=()=>{ if(el('lives-display')) el('lives-display').innerHTML='❤️'.repeat(lives); };
+            const startTimer=(s)=>{ if(timerInterval)clearInterval(timerInterval); timeLeft=s; show('timer-display'); el('timer-display').textContent=s; timerInterval=setInterval(()=>{ timeLeft--; el('timer-display').textContent=timeLeft; if(timeLeft<=0)endGame(false); },1000); };
 
-            const CHALLENGES = {
-                bronze: { name: 'Bronze', goal: 10, lives: 3, next: 'silver', time: 180 },
-                silver: { name: 'Argent', goal: 20, lives: 3, next: 'gold', time: 180 },
-                gold:   { name: 'Or', goal: 30, lives: 3, next: null, time: 120 }
+            const newQ=()=>{ if(!gameInProgress)return; document.querySelectorAll('.note-dot').forEach(n=>n.remove()); el('feedback-message').textContent=''; el('new-question-btn').classList.add('btn-disabled'); el('new-question-btn').classList.remove('btn-highlight');
+                let ret=0; targetNote=null; while(!targetNote&&ret<200){ const s=Math.floor(Math.random()*NUM_STRINGS), f=Math.floor(Math.random()*10)+2; rootNote={string:s,fret:f}; const pt=[]; for(let i=-2;i<=2;i++){ const si=s+i; if(si>=0&&si<NUM_STRINGS) for(let fr=Math.max(0,f-4);fr<=Math.min(NUM_FRETS,f+4);fr++){ if(si===s&&fr===f)continue; let val=(getVal({string:si,fret:fr})-getVal(rootNote)+12)%12; if(val===0)val=12; if(activeIntervalKeys.some(k=>INTERVALS[k]===val)) pt.push({string:si,fret:fr}); } } targetNote=pt.length>0?pt[Math.floor(Math.random()*pt.length)]:null; ret++; }
+                if(!targetNote){newQ();return;}
+                let sem=(getVal(targetNote)-getVal(rootNote)+12)%12; if(sem===0)sem=12; correctInterval=Object.keys(INTERVALS).find(k=>INTERVALS[k]===sem);
+                const rVal=getVal(rootNote); placeNote(rootNote,'F',{note:(Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]}); placeNote(targetNote,'T');
+                const n=el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
+                genChoices(); setTimeout(playInterval,300);
             };
 
-            const el = (id) => document.getElementById(id);
-            let rootNote, targetNote, correctInterval;
-            let gameInProgress = false, soundReady = false, synth;
-            let activeIntervalKeys = [...intervalKeys]; 
-            let currentNoteDisplay;
-            let lives, score, currentChallenge, currentMode;
-            let timerInterval, timeLeft;
+            const genChoices=()=>{ const p=activeIntervalKeys.filter(k=>k!==correctInterval); let d=p.sort(()=>0.5-Math.random()).slice(0,3); if(d.length<3) d=d.concat(intervalKeys.filter(k=>k!==correctInterval&&!d.includes(k)).slice(0,3-d.length)); const c=[correctInterval,...d].sort(()=>0.5-Math.random()); el('answer-buttons').innerHTML=''; c.forEach(ch=>{ const b=document.createElement('button'); b.textContent=ch; b.className='answer-btn bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold py-3 rounded text-lg shadow w-full'; b.onclick=()=>handle(ch,b); el('answer-buttons').appendChild(b); }); };
 
-            const initSound = async () => { if (!soundReady) { try { await Tone.start(); synth = new Tone.FMSynth({ harmonicity: 3.01, modulationIndex: 14, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.4 } }).toDestination(); soundReady = true; } catch (e) { console.error("Could not start audio.", e); } } };
-            const getNoteWithOctave = (s, f) => { const total = TUNING_SEMITONES_FROM_C0[s] + f; return NOTES[total % 12] + Math.floor(total / 12); };
-            const playInterval = () => { if (soundReady && rootNote && targetNote) { const rootOctave = getNoteWithOctave(rootNote.string, rootNote.fret); const targetOctave = getNoteWithOctave(targetNote.string, targetNote.fret); synth.triggerAttackRelease(rootOctave, "8n"); synth.triggerAttackRelease(targetOctave, "8n", "+4n"); } };
-
-            const hideAllScreens = () => { ['login-screen', 'main-menu', 'challenge-selection-menu', 'review-setup-screen', 'app-container'].forEach(id => el(id).classList.add('hidden')); }
-
-            document.querySelector('[data-action="open-challenge-menu"]').addEventListener('click', () => { hideAllScreens(); el('challenge-selection-menu').classList.remove('hidden'); });
-            el('start-review-setup-btn').addEventListener('click', () => { renderCheckboxes(el('review-checkboxes'), true); hideAllScreens(); el('review-setup-screen').classList.remove('hidden'); });
-            document.querySelectorAll('[data-action="back-to-main"]').forEach(b => b.addEventListener('click', () => { hideAllScreens(); el('main-menu').classList.remove('hidden'); if(window.saveScoreToFirebase) { } }));
-
-            el('back-button').addEventListener('click', () => {
-                if (timerInterval) clearInterval(timerInterval);
-                hideAllScreens();
-                if(currentMode === 'challenge') el('challenge-selection-menu').classList.remove('hidden');
-                else if(currentMode === 'review') el('review-setup-screen').classList.remove('hidden');
-                else el('main-menu').classList.remove('hidden');
-            });
-
-            const startChallenge = (challengeKey) => {
-                currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[challengeKey], key: challengeKey }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0;
-                el('app-title').textContent = `Challenge ${currentChallenge.name}`; el('game-ui-bar').classList.remove('hidden'); el('training-section-controls').classList.remove('hidden'); el('review-lesson-box').classList.add('hidden');
-                updateScoreDisplay(); updateLivesDisplay(); startTimer(currentChallenge.time); hideAllScreens(); el('app-container').classList.remove('hidden'); gameInProgress = true; newQuestion();
-            };
-
-            const startReviewSession = () => {
-                const checked = el('review-checkboxes').querySelectorAll('input:checked');
-                if (checked.length === 0) { alert("Sélectionnez au moins un intervalle !"); return; }
-                activeIntervalKeys = Array.from(checked).map(cb => cb.value); currentMode = 'review';
-                el('app-title').textContent = 'Entraînement Libre'; el('game-ui-bar').classList.add('hidden'); el('training-section-controls').classList.remove('hidden'); el('review-lesson-box').classList.remove('hidden');
-                el('lesson-content').innerHTML = activeIntervalKeys.map(k => `<div class="mb-1 flex gap-2"><strong class="text-indigo-300 bg-indigo-900 px-1 rounded text-xs flex items-center">${k}</strong> <span class="text-gray-300">${INTERVALS_DATA[k].desc}</span></div>`).join('');
-                hideAllScreens(); el('app-container').classList.remove('hidden'); gameInProgress = true; newQuestion();
-            };
-
-            const startTimer = (seconds) => {
-                if (timerInterval) clearInterval(timerInterval); if (!seconds) { el('timer-display').classList.add('hidden'); return; }
-                timeLeft = seconds; el('timer-display').classList.remove('hidden'); el('timer-display').textContent = `${timeLeft}s`;
-                timerInterval = setInterval(() => { timeLeft--; el('timer-display').textContent = `${timeLeft}s`; if (timeLeft <= 0) endGame(false, 'timeout'); }, 1000);
-            };
-
-            const endGame = (isWin, reason = null) => {
-                if (timerInterval) clearInterval(timerInterval); gameInProgress = false; el('end-game-buttons').innerHTML = '';
-                if(currentMode === 'challenge' && window.saveScoreToFirebase) window.saveScoreToFirebase(score, currentChallenge.name);
-                if (isWin) {
-                    el('end-game-title').textContent = `Challenge Validé !`; el('end-game-title').className = 'text-4xl font-bold mb-4 text-green-400 tracking-tighter';
-                    el('end-game-message').innerHTML = `<div class="bg-green-900/30 border border-green-500/30 p-6 rounded-xl text-green-100"><p class="text-xl font-bold mb-2">Félicitations ! 🎉</p><p class="text-sm opacity-80">Score enregistré.</p></div>`;
-                    if (currentChallenge.next) el('end-game-buttons').appendChild(createButton(`Niveau Suivant`, 'bg-blue-600', () => { el('end-game-modal').classList.add('hidden'); startChallenge(currentChallenge.next); }));
+            const handle=(sel,btn)=>{ if(!gameInProgress)return; if(!soundReady)initSound(); const ok=sel===correctInterval;
+                if(currentMode==='review'&&!ok){ show('error-modal'); return; }
+                el('answer-buttons').querySelectorAll('button').forEach(b=>{ b.disabled=true; if(b.textContent===correctInterval)b.classList.add('correct'); else if(b===btn&&!ok)b.classList.add('incorrect'); else b.classList.add('opacity-20'); });
+                if(ok){ 
+                    el('feedback-message').innerHTML=`<span class="text-emerald-400">Bravo !</span>`; score++; 
+                    if(currentMode==='challenge'){ updateScore(); if(score>=currentChallenge.goal) setTimeout(()=>endGame(true),1000); }
+                    else { updateProg(score); if(score>=30) setTimeout(()=>{ if(window.saveScoreToFirebase)window.saveScoreToFirebase(30,el('app-title').textContent,30); endGame(true); },1000); }
                 } else {
-                    el('end-game-title').textContent = 'Aïe...'; el('end-game-title').className = 'text-4xl font-bold mb-4 text-red-400';
-                    el('end-game-message').innerHTML = `<div class="mb-4">${reason === 'timeout' ? "Temps écoulé." : "Plus de vies."}</div><div class="text-sm text-gray-500">Score enregistré : ${score}/${currentChallenge.goal}</div>`;
-                    el('end-game-buttons').appendChild(createButton('Réessayer', 'bg-gray-600', () => { el('end-game-modal').classList.add('hidden'); startChallenge(currentChallenge.key); }));
+                    el('feedback-message').innerHTML=`<span class="text-red-400">${correctInterval}</span>`; lives--; updateLives(); if(lives<=0) setTimeout(()=>endGame(false),1000);
                 }
-                el('end-game-buttons').appendChild(createButton('Menu Principal', 'bg-transparent border border-gray-600 hover:bg-gray-700', () => { el('end-game-modal').classList.add('hidden'); hideAllScreens(); el('main-menu').classList.remove('hidden'); }));
-                el('end-game-modal').classList.remove('hidden');
+                el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
             };
 
-            const getNoteValue = (s, f) => (TUNING_SEMITONES_FROM_C0[s] + f) % 12;
-            const findValidTarget = (root) => {
-                const possibleTargets = [];
-                const minFret = Math.max(0, root.fret - SEARCH_ZONE_RADIUS);
-                const maxFret = Math.min(NUM_FRETS, root.fret + SEARCH_ZONE_RADIUS);
-                const stringsToCheck = [];
-                for (let i = -STRING_SEARCH_RADIUS; i <= STRING_SEARCH_RADIUS; i++) {
-                    const stringIndex = root.string + i;
-                    if (stringIndex >= 0 && stringIndex < NUM_STRINGS) stringsToCheck.push(stringIndex);
-                }
-                for (const s of stringsToCheck) {
-                    for (let f = minFret; f <= maxFret; f++) {
-                        if (s === root.string && f === root.fret) continue;
-                        let intervalValue = (getNoteValue(s, f) - getNoteValue(root.string, root.fret) + 12) % 12;
-                        if (intervalValue === 0) intervalValue = 12; 
-                        if (activeIntervalKeys.some(key => INTERVALS[key] === intervalValue)) possibleTargets.push({ string: s, fret: f });
-                    }
-                }
-                return possibleTargets.length > 0 ? possibleTargets[Math.floor(Math.random() * possibleTargets.length)] : null;
+            const endGame=(win)=>{ if(timerInterval)clearInterval(timerInterval); gameInProgress=false; el('end-game-buttons').innerHTML='';
+                if(currentMode==='challenge' && window.saveScoreToFirebase) window.saveScoreToFirebase(score, currentChallenge.name, currentChallenge.goal);
+                el('end-game-title').textContent=win?"VICTOIRE !":"FIN"; el('end-game-title').className=win?'text-2xl font-black text-emerald-500':'text-2xl font-black text-red-500';
+                el('end-game-message').textContent=win?"Validé !":`Score: ${score}`;
+                if(win&&currentChallenge?.next) el('end-game-buttons').innerHTML+=`<button class="bg-blue-600 text-white py-1.5 rounded font-bold w-full mb-1 text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); window.startChallenge('${currentChallenge.next}')">Suivant</button>`;
+                el('end-game-buttons').innerHTML+=`<button class="bg-slate-700 text-white py-1.5 rounded w-full text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); location.reload()">Menu</button>`;
+                show('end-game-modal');
             };
-
-            const newQuestion = () => {
-                if (!gameInProgress) return;
-                clearBoard(); el('feedback-message').textContent = ''; el('new-question-btn').classList.add('btn-disabled'); el('new-question-btn').classList.remove('btn-highlight');
-                currentNoteDisplay = Math.random() < 0.5 ? NOTES_SHARP : NOTES_FLAT;
-                let potentialRootNote, potentialTargetNote, retries = 0;
-                while (!potentialTargetNote && retries < 200) {
-                    const randomString = Math.floor(Math.random() * NUM_STRINGS);
-                    const randomFret = Math.floor(Math.random() * (NUM_FRETS - 5)) + 3;
-                    potentialRootNote = { string: randomString, fret: randomFret };
-                    potentialTargetNote = findValidTarget(potentialRootNote);
-                    retries++;
-                }
-                if (!potentialTargetNote) { alert("Pas de question possible."); return; }
-                rootNote = potentialRootNote; targetNote = potentialTargetNote;
-                const rVal = getNoteValue(rootNote.string, rootNote.fret);
-                placeNote(rootNote.string, rootNote.fret, 'F', { note: currentNoteDisplay[rVal] });
-                placeNote(targetNote.string, targetNote.fret, 'T');
-                generateAnswerChoices();
-                playInterval();
-            };
-
-            const generateAnswerChoices = () => {
-                const pool = activeIntervalKeys.filter(key => key !== correctInterval);
-                const distractors = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
-                const choices = [correctInterval, ...distractors].sort(() => 0.5 - Math.random());
-                el('answer-buttons').innerHTML = '';
-                choices.forEach(choice => {
-                    const btn = createButton(choice, 'answer-btn bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-4 px-4 rounded-lg transition-all text-xl shadow-md', () => handleAnswerClick(choice));
-                    btn.dataset.interval = choice; el('answer-buttons').appendChild(btn);
-                });
-            };
-
-            const handleAnswerClick = (selectedInterval) => {
-                if (!gameInProgress) return;
-                const isCorrect = selectedInterval === correctInterval;
-                el('answer-buttons').querySelectorAll('button').forEach(btn => {
-                    btn.disabled = true; btn.style.borderBottomWidth = '0px'; btn.style.transform = 'translateY(2px)';
-                    if (btn.dataset.interval === correctInterval) btn.classList.add('correct');
-                    else if (btn.dataset.interval === selectedInterval && !isCorrect) btn.classList.add('incorrect');
-                    else btn.classList.add('opacity-30');
-                });
-                if (isCorrect) {
-                    el('feedback-message').innerHTML = `<span class="text-green-400">Correct !</span>`;
-                    if (currentMode === 'challenge') { score++; updateScoreDisplay(); if (score >= currentChallenge.goal) setTimeout(() => endGame(true), 1000); }
-                } else {
-                    el('feedback-message').innerHTML = `<span class="text-red-400">Raté, c'était ${correctInterval}</span>`;
-                    if (currentMode === 'challenge') { lives--; updateLivesDisplay(); if (lives <= 0) setTimeout(() => endGame(false), 1000); }
-                }
-                if ((currentMode === 'review') || (currentMode === 'challenge' && lives > 0 && score < currentChallenge.goal)) {
-                    el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
-                }
-            };
-
-            const updateScoreDisplay = () => { if(el('score-display') && currentChallenge) el('score-display').textContent = `${score}/${currentChallenge.goal}`; };
-            const updateLivesDisplay = () => { if(!el('lives-display') || !currentChallenge) return; el('lives-display').innerHTML = ''; for (let i = 0; i < currentChallenge.lives; i++) { el('lives-display').innerHTML += (i < lives) ? '❤️' : '<span class="opacity-20 grayscale">❤️</span>'; } };
-
-            function createButton(text, classes, onClick) { const btn = document.createElement('button'); btn.textContent = text; btn.className = `${classes} text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200`; btn.onclick = onClick; return btn; }
-            
-            function placeNote(s, f, type, data = {}) {
-                // DOM Query strict
-                const fretWrapper = el('guitar-neck').querySelector(`[data-string='${s}'][data-fret='${f}']`)?.parentElement;
-                if (!fretWrapper) { console.error("Fret missing in DOM:", s, f); return; }
-                removeNote(s,f);
-                const noteDot = document.createElement('div');
-                let bgColor = (type === 'F') ? 'bg-sky-500' : ((type === 'T') ? 'bg-indigo-500' : 'bg-red-500');
-                // CSS enforced centering
-                noteDot.className = `note-dot w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${bgColor} text-white`;
-                noteDot.textContent = (type === 'F') ? data.note : ((type === 'T') ? '?' : 'X');
-                fretWrapper.appendChild(noteDot);
-            }
-            function removeNote(s, f) { const w = el('guitar-neck').querySelector(`[data-string='${s}'][data-fret='${f}']`)?.parentElement; if (w) w.querySelector('.note-dot')?.remove(); }
-            function clearBoard() { el('guitar-neck').querySelectorAll('.note-dot').forEach(n => n.remove()); }
-            
-            function drawFretboard() {
-                const neckContainer = document.createElement('div'); neckContainer.className = 'fretboard relative flex flex-col-reverse p-1 rounded-lg shadow-inner';
-                for (let i = 0; i < NUM_STRINGS; i++) {
-                    const stringEl = document.createElement('div'); stringEl.className = 'string-container relative flex items-center h-12'; stringEl.dataset.stringId = i;
-                    const stringLine = document.createElement('div'); stringLine.className = 'string absolute left-0 right-0 z-10';
-                    stringLine.style.height = `${((NUM_STRINGS - 1 - i) * 0.6) + 1}px`;
-                    stringEl.appendChild(stringLine);
-                    for (let j = 0; j < NUM_FRETS + 1; j++) {
-                        const fretContainer = document.createElement('div'); fretContainer.className = 'fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent';
-                        if (j === 0) { const nut = document.createElement('div'); nut.className = 'fret-nut absolute right-0 top-0 bottom-0'; nut.style.width = '8px'; fretContainer.appendChild(nut); } 
-                        else { const fretLine = document.createElement('div'); fretLine.className = 'fret-line absolute right-0 top-0 bottom-0'; fretLine.style.width = '2px'; fretContainer.appendChild(fretLine); }
-                        const clickableArea = document.createElement('div'); clickableArea.className = 'note-target absolute inset-0 z-20 cursor-pointer'; clickableArea.dataset.string = i; clickableArea.dataset.fret = j;
-                        fretContainer.appendChild(clickableArea); stringEl.appendChild(fretContainer);
-                    }
-                    neckContainer.appendChild(stringEl);
-                }
-                el('guitar-neck').innerHTML = ''; el('guitar-neck').appendChild(neckContainer);
-                
-                // Markers
-                const middleString = neckContainer.children[2];
-                [3,5,7,9,15].forEach(fret => { const cell = middleString.children[fret+1]; if(cell) { const mark = document.createElement('div'); mark.className = 'absolute w-4 h-4 rounded-full bg-black/30 z-0'; cell.insertBefore(mark, cell.firstChild); } });
-                const sG = neckContainer.children[3]; const sD = neckContainer.children[2];
-                const cG12 = sG.children[13]; const cD12 = sD.children[13];
-                if(cG12 && cD12) { 
-                    const m1 = document.createElement('div'); m1.className = 'absolute w-4 h-4 rounded-full bg-black/30 translate-y-2 z-0';
-                    const m2 = document.createElement('div'); m2.className = 'absolute w-4 h-4 rounded-full bg-black/30 -translate-y-2 z-0';
-                    cG12.insertBefore(m1, cG12.firstChild); cD12.insertBefore(m2, cD12.firstChild);
-                }
-            }
-
-            function renderCheckboxes(container, isReviewSetup = false) {
-                container.innerHTML = '';
-                intervalKeys.forEach(key => {
-                    const wrapper = document.createElement('div'); wrapper.className = 'flex items-center bg-gray-700/50 p-3 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors';
-                    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `check-${isReviewSetup ? 'review' : 'settings'}-${key}`; checkbox.value = key; checkbox.checked = true; checkbox.className = 'h-5 w-5 rounded border-gray-500 text-sky-500 focus:ring-sky-500 bg-gray-800 cursor-pointer';
-                    const label = document.createElement('label'); label.htmlFor = checkbox.id; label.innerHTML = `<span class="font-bold text-sky-300 text-lg block">${key}</span> <span class="text-xs text-gray-400 leading-tight block">${INTERVALS_DATA[key].desc.split(':')[0]}</span>`; label.className = 'ml-3 cursor-pointer select-none flex-1';
-                    wrapper.append(checkbox, label); container.appendChild(wrapper);
-                });
-            }
-
-            // Listeners
-            drawFretboard();
-            document.querySelectorAll('.challenge-btn').forEach(btn => btn.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge)));
-            el('launch-review-btn').addEventListener('click', startReviewSession);
-            el('review-select-all').addEventListener('click', () => el('review-checkboxes').querySelectorAll('input').forEach(cb => cb.checked = true));
-            el('review-deselect-all').addEventListener('click', () => el('review-checkboxes').querySelectorAll('input').forEach(cb => cb.checked = false));
-            el('new-question-btn').addEventListener('click', () => { if(!el('new-question-btn').classList.contains('btn-disabled')) { gameInProgress = true; newQuestion(); } });
-            el('replay-sound-btn').addEventListener('click', playInterval);
-            el('btn-brain-info').addEventListener('click', () => el('brain-modal').classList.remove('hidden'));
-            el('close-brain-btn').addEventListener('click', () => el('brain-modal').classList.add('hidden'));
+            window.startChallenge = (k) => { currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[k], key: k }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0; el('app-title').textContent = `Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress = true; newQ(); };
+            function placeNote(n,t,d={}){ const w=el('guitar-neck').querySelector(`[data-string='${n.string}'][data-fret='${n.fret}']`)?.parentElement; if(!w)return; w.querySelector('.note-dot')?.remove(); const div=document.createElement('div'); div.className=`note-dot note-pop w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-bold text-xs ${t==='F'?'bg-sky-500':(t==='T'?'bg-indigo-500':'bg-red-500')} text-white`; div.textContent=t==='F'?d.note:(t==='T'?'?':''); w.appendChild(div); }
+            safeListen('new-question-btn', 'click', ()=>{ if(!el('new-question-btn').classList.contains('btn-disabled')){gameInProgress=true;newQ();} });
+            safeListen('replay-sound-btn', 'click', playInterval);
+            safeListen('btn-brain-info', 'click', ()=>show('brain-modal')); safeListen('close-brain-btn', 'click', ()=>hide('brain-modal'));
+            document.body.addEventListener('click', ()=>{if(!soundReady)initSound();}, {once:true});
+            window.addEventListener('resize', ()=>{if(!el('review-path-menu').classList.contains('hidden'))renderPath3D();});
+            document.querySelectorAll('.challenge-btn').forEach(b => b.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge)));
+            (function(){ const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; for(let i=0;i<NUM_STRINGS;i++){ const s=document.createElement('div'); s.className='string-container relative flex items-center h-8 md:h-9'; s.dataset.stringId=i; const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.5)+1}px`; s.appendChild(l); for(let j=0;j<NUM_FRETS+1;j++){ const fw=document.createElement('div'); fw.className='fret-wrapper relative w-[40px] md:w-[50px] h-full flex justify-center items-center border-r border-transparent flex-shrink-0'; if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} const a=document.createElement('div'); a.className='absolute inset-0 z-20 cursor-pointer'; a.dataset.string=i; a.dataset.fret=j; fw.appendChild(a); s.appendChild(fw); } n.appendChild(s); } el('guitar-neck').innerHTML=''; el('guitar-neck').appendChild(n); [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild);}); const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild)); })();
         });
     </script>
 </body>
