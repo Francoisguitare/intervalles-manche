@@ -77,8 +77,8 @@
         .answer-btn.correct { background: #059669 !important; color: white; border-color: #064e3b !important; }
         .answer-btn.incorrect { background: #dc2626 !important; color: white; border-color: #991b1b !important; }
         
-        .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
-        .admin-table td { padding: 12px; border-bottom: 1px solid #374151/50; font-size: 13px; color: #e5e7eb; }
+        .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
+        .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -110,14 +110,27 @@
         <div class="main-center">
             
             <!-- LOGIN -->
-            <div id="login-screen" class="w-full max-w-3xl flex flex-col items-center justify-center animate-fade-in">
-                <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400 mb-8 tracking-tight">INTERVALLES TRAINER</h1>
-                <div id="user-selection-container" class="w-full flex justify-center">
-                    <div id="users-list" class="flex flex-wrap justify-center gap-3 max-w-2xl">
-                        <div id="show-create-profile-btn" class="aspect-square bg-gray-800/30 hover:bg-gray-800 border border-dashed border-gray-600 hover:border-sky-400 rounded-xl flex flex-col items-center justify-center p-2 cursor-pointer transition-all group">
-                            <div class="w-8 h-8 rounded-full bg-gray-700 group-hover:bg-sky-500 flex items-center justify-center text-lg font-bold text-gray-400 group-hover:text-white mb-1 transition-colors">+</div>
-                            <span class="text-[9px] font-bold text-gray-400 group-hover:text-white">Nouveau</span>
-                        </div>
+            <div id="login-screen" class="w-full max-w-md flex flex-col items-center justify-center animate-fade-in p-4">
+                <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400 mb-8 tracking-tight text-center">INTERVALLES TRAINER</h1>
+                
+                <div class="w-full bg-slate-900/50 p-6 rounded-2xl border border-slate-800 shadow-2xl backdrop-blur-sm">
+                    <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Qui s'entraîne ?</label>
+                    <div class="relative mb-4">
+                        <select id="user-login-select" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-3 focus:border-sky-500 outline-none appearance-none cursor-pointer">
+                            <option value="" disabled selected>Choisir un profil...</option>
+                            <!-- Options injected via JS -->
+                        </select>
+                        <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">▼</div>
+                    </div>
+                    
+                    <button id="user-login-btn" class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        C'est parti !
+                    </button>
+
+                    <div class="mt-6 text-center">
+                        <button id="show-verification-btn" class="text-[10px] text-slate-500 hover:text-sky-400 transition-colors underline decoration-slate-700 underline-offset-2">
+                            Je ne vois pas mon nom, créer un profil
+                        </button>
                     </div>
                 </div>
             </div>
@@ -197,7 +210,6 @@
                     <h1 id="app-title" class="text-xs font-black italic text-sky-400 truncate mx-2"></h1>
                     <div class="w-8"></div>
                 </header>
-                <!-- Added missing ID for text progress -->
                 <div id="review-progress-bar-container" class="hidden w-full bg-slate-800 rounded-full h-3 mb-2 overflow-hidden relative border border-slate-700">
                     <div id="review-progress-fill" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
                     <div class="absolute inset-0 flex items-center justify-center text-[8px] font-bold uppercase tracking-widest text-white drop-shadow-md">
@@ -244,10 +256,22 @@
     </div>
 
     <!-- MODALS -->
+    <div id="verification-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[80]">
+        <div class="glass-panel rounded-xl p-6 w-80 text-center border border-slate-600">
+            <h2 class="text-sm font-bold text-white mb-2">Vérification</h2>
+            <p class="text-[10px] text-slate-400 mb-3">Avant de créer un doublon, vérifiez que votre nom n'est pas ci-dessous :</p>
+            <div id="verification-list" class="max-h-40 overflow-y-auto bg-slate-900 rounded p-2 mb-4 text-xs text-left text-slate-300 custom-scroll border border-slate-800"></div>
+            <div class="flex gap-2">
+                <button id="cancel-verification" class="flex-1 bg-slate-800 text-slate-400 py-2 rounded text-xs font-bold">Annuler</button>
+                <button id="confirm-verification" class="flex-1 bg-indigo-600 text-white py-2 rounded text-xs font-bold">Mon nom n'y est pas</button>
+            </div>
+        </div>
+    </div>
+
     <div id="create-profile-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[70]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-slate-700"><h2 class="text-sm font-bold text-white mb-4">Nouveau Profil</h2><input type="text" id="new-username-input" class="w-full bg-black/50 text-white p-2 rounded border border-slate-600 text-xs mb-4" placeholder="Prénom"><div class="grid grid-cols-2 gap-2"><button id="cancel-create-profile" class="bg-slate-800 text-slate-300 py-1 rounded text-xs">Annuler</button><button id="confirm-create-profile" class="bg-sky-600 text-white py-1 rounded text-xs font-bold">Créer</button></div></div></div>
     <div id="error-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[80]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-red-900/50"><div class="text-4xl mb-2">👀</div><h2 class="text-sm font-bold text-white">Regarde bien !</h2><p class="text-slate-400 text-[10px] mb-4">Compte les cases...</p><button id="close-error-btn" class="w-full bg-white text-black py-1.5 rounded text-xs font-bold">OK</button></div></div>
     <div id="pin-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-yellow-900/30"><h2 class="text-xs font-bold text-white mb-4">Admin PIN</h2><input type="password" id="pin-input" class="w-full bg-black/50 text-white text-center p-2 rounded border border-slate-600 mb-4" placeholder="••••"><div class="grid grid-cols-2 gap-2"><button id="cancel-pin-btn" class="bg-slate-800 text-white py-1 rounded text-xs">Annuler</button><button id="validate-pin-btn" class="bg-yellow-700 text-black py-1 rounded text-xs font-bold">Go</button></div></div></div>
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Mode</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div></div></div></div>
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div></div></div></div>
     <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[70]"><div class="bg-slate-900 border border-red-900 rounded-xl p-6 w-64 text-center"><h2 class="text-sm font-bold text-white mb-2">Confirmer ?</h2><p id="delete-message" class="text-slate-400 text-[10px] mb-4"></p><div class="flex gap-2"><button id="cancel-delete-btn" class="flex-1 bg-slate-800 text-white py-1 rounded text-xs">Non</button><button id="confirm-delete-btn" class="flex-1 bg-red-800 text-white py-1 rounded text-xs">Oui</button></div></div></div>
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
     <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
@@ -271,16 +295,73 @@
 
         const initAuth = async () => { try { await signInAnonymously(auth); listenForUsers(); listenForActivityFeed(); listenForChat(); show('login-screen'); hide('main-menu'); } catch (e) {} };
 
-        // --- USERS ---
-        function listenForUsers() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'users')), (snap) => { existingUsers = []; snap.forEach(d => existingUsers.push({id:d.id, ...d.data()})); existingUsers.sort((a,b)=>a.pseudo.localeCompare(b.pseudo)); renderUserGrid(); if(!el('admin-modal').classList.contains('hidden')) renderAdminUsers(); }); }
-        function renderUserGrid() { 
-            const c = el('users-list'), btn = el('show-create-profile-btn'); c.innerHTML=''; c.appendChild(btn); 
-            existingUsers.forEach(u => { const d=document.createElement('div'); d.className='w-20 h-20 bg-slate-800/50 hover:bg-slate-800 text-center p-2 rounded-xl border border-slate-700 hover:border-sky-500 cursor-pointer group flex flex-col items-center justify-center gap-1'; d.onclick=()=>finalizeLogin(u.pseudo, u.id); d.innerHTML=`<div class="w-8 h-8 rounded-full bg-slate-700 group-hover:bg-sky-600 flex items-center justify-center text-xs font-bold text-white">${u.pseudo.charAt(0).toUpperCase()}</div><div class="font-bold text-[9px] text-slate-400 group-hover:text-white truncate w-full">${u.pseudo}</div>`; c.appendChild(d); }); 
+        // --- USERS & LOGIN ---
+        function listenForUsers() { 
+            if(!db) return; 
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'users')), (snap) => { 
+                existingUsers = []; 
+                snap.forEach(d => existingUsers.push({id:d.id, ...d.data()})); 
+                existingUsers.sort((a,b)=>a.pseudo.localeCompare(b.pseudo)); 
+                
+                // Update Select
+                const select = el('user-login-select');
+                const currentVal = select.value;
+                select.innerHTML = '<option value="" disabled selected>Choisir un profil...</option>';
+                existingUsers.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id; // Use ID as value
+                    opt.textContent = u.pseudo;
+                    opt.dataset.pseudo = u.pseudo; // Store pseudo for later
+                    select.appendChild(opt);
+                });
+                if(currentVal) select.value = currentVal;
+
+                // Update Verification List
+                const vList = el('verification-list');
+                vList.innerHTML = '';
+                existingUsers.forEach(u => {
+                    const div = document.createElement('div');
+                    div.textContent = "• " + u.pseudo;
+                    div.className = "py-1 border-b border-slate-800 last:border-0";
+                    vList.appendChild(div);
+                });
+                
+                if(!el('admin-modal').classList.contains('hidden')) renderAdminUsers(); 
+            }); 
         }
-        
-        safeListener('show-create-profile-btn', 'click', ()=>{ el('new-username-input').value=''; show('create-profile-modal'); });
+
+        // Login Logic
+        safeListener('user-login-select', 'change', () => {
+            el('user-login-btn').disabled = false;
+            el('user-login-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        safeListener('user-login-btn', 'click', () => {
+            const select = el('user-login-select');
+            const uid = select.value;
+            const pseudo = select.options[select.selectedIndex].dataset.pseudo;
+            if(uid && pseudo) finalizeLogin(pseudo, uid);
+        });
+
+        // Creation Logic
+        safeListener('show-verification-btn', 'click', () => show('verification-modal'));
+        safeListener('cancel-verification', 'click', () => hide('verification-modal'));
+        safeListener('confirm-verification', 'click', () => {
+            hide('verification-modal');
+            el('new-username-input').value = '';
+            show('create-profile-modal');
+        });
+
         safeListener('cancel-create-profile', 'click', ()=>hide('create-profile-modal'));
-        safeListener('confirm-create-profile', 'click', async ()=>{ const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
+        safeListener('confirm-create-profile', 'click', async ()=>{ 
+            const p = el('new-username-input').value.trim(); 
+            if(!p) return; 
+            try { 
+                const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); 
+                hide('create-profile-modal'); 
+                finalizeLogin(p, r.id); 
+            } catch(e){} 
+        });
 
         async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); showMainMenu(); }
 
@@ -293,7 +374,6 @@
                 let mode = x.mode.replace("Niveau", "Niv").replace("Challenge", "Chall");
                 let icon = (x.score >= (x.total||30)) ? '🎉' : '';
                 let initial = x.pseudo.charAt(0).toUpperCase();
-                // Compact layout: Avatar | Name • Mode ScoreIcon
                 d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-3 h-3 rounded-full bg-indigo-600 flex items-center justify-center text-[6px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300">${x.pseudo} <span class="text-slate-500">• ${mode}</span></span><span class="${icon?'text-green-400':'text-yellow-500'} font-bold ml-1 flex items-center">${x.score} <span class="text-[8px] ml-0.5">${icon}</span></span></div></div>`;
                 c.appendChild(d); 
             }); 
@@ -323,7 +403,32 @@
         safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions);
         function switchAdminTab(t) { if(t==='users'){ show('admin-users-view'); hide('admin-sessions-view'); renderAdminUsers(); } else { hide('admin-users-view'); show('admin-sessions-view'); renderAdminSessions(); } }
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
-        async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
+        
+        async function renderAdminSessions() { 
+            const b=el('admin-sessions-tbody'); b.innerHTML='...'; 
+            if(!db)return; 
+            const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); 
+            const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); 
+            l.sort((a,b)=>b.timestamp-a.timestamp); 
+            b.innerHTML=''; 
+            l.forEach(x=>{ 
+                const r=document.createElement('tr'); 
+                const dateObj = new Date(x.timestamp);
+                const dStr = dateObj.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
+                const tStr = dateObj.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                
+                r.innerHTML=`
+                    <td><div class="flex flex-col leading-tight"><span>${dStr}</span><span class="text-slate-500 text-[9px]">${tStr}</span></div></td>
+                    <td class="font-bold text-white">${x.pseudo}</td>
+                    <td class="text-sky-400 text-[10px]">${x.mode}</td>
+                    <td class="font-mono font-bold text-yellow-400">${x.score}/${x.total||'?'}</td>
+                    <td class="text-right"><button class="text-red-500 font-bold">X</button></td>
+                `; 
+                r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Score ${x.score} (${x.pseudo})`); 
+                b.appendChild(r); 
+            }); 
+        }
+        
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
         safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
         safeListener('confirm-delete-btn', 'click', async ()=>{ if(itemToDelete){ try{ await deleteDoc(doc(db,'artifacts',appId,'public','data',itemToDelete.t==='user'?'users':'scores',itemToDelete.id)); }catch(e){alert(e);} hide('confirm-delete-modal'); if(itemToDelete.t==='user') renderAdminUsers(); else renderAdminSessions(); } });
@@ -347,43 +452,19 @@
         }
 
         function loadChartData() {
-            if(!db) return; 
-            // Safety Check to prevent crash
-            const loader = el('chart-loading');
-            if(loader) loader.classList.remove('hidden'); 
-            
+            if(!db) return; const loader = el('chart-loading'); if(loader) loader.classList.remove('hidden'); 
             if(progressChartRef) { progressChartRef.destroy(); progressChartRef = null; }
-            
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores'));
-            
-            onSnapshot(q, (snapshot) => {
-                const scores = []; 
-                snapshot.forEach(doc => { 
-                    const d = doc.data(); 
-                    if(d.pseudo === currentUserPseudo && d.mode.includes("Challenge")) {
-                        scores.push(d); 
-                    }
-                });
-                
-                const dayBest = {}; 
-                scores.forEach(s => { 
-                    const d = new Date(s.timestamp).toISOString().split('T')[0]; 
-                    if(!dayBest[d] || s.score > dayBest[d].score) dayBest[d] = s; 
-                });
-                
-                const sorted = Object.values(dayBest).sort((a,b) => a.timestamp - b.timestamp); 
-                renderChart(sorted); 
-                
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => {
+                const scores=[]; snap.forEach(d=>{ const da=d.data(); if(da.pseudo===currentUserPseudo && da.mode.includes("Challenge")) scores.push(da); });
+                const dayBest={}; scores.forEach(s=>{ const d=new Date(s.timestamp).toISOString().split('T')[0]; if(!dayBest[d] || s.score > dayBest[d].score) dayBest[d]=s; });
+                const sorted=Object.values(dayBest).sort((a,b)=>a.timestamp-b.timestamp);
+                const ctx = el('progressionChart').getContext('2d');
+                const labels = sorted.map(d => new Date(d.timestamp).toLocaleDateString('fr-FR', {day:'numeric', month:'short'}));
+                const data = sorted.map(d => d.score);
+                const goal = Array(data.length).fill(30);
+                progressChartRef = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Score', data, borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', tension: 0.4, fill: true, pointRadius: 3 }, { label: 'Objectif', data: goal, borderColor: '#eab308', borderDash: [4, 4], pointRadius: 0, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero: true, max: 35, grid: {color:'rgba(255,255,255,0.05)'}, ticks:{font:{size:8}, color:'#6b7280'} }, x: { display:false } } } });
                 if(loader) loader.classList.add('hidden');
             });
-        }
-
-        function renderChart(data) {
-            const canvas = el('progressionChart'); if(!canvas) return; const ctx = canvas.getContext('2d');
-            const labels = data.map(d => new Date(d.timestamp).toLocaleDateString('fr-FR', {day:'numeric', month:'short'}));
-            const vals = data.map(d => d.score);
-            const goal = Array(data.length).fill(30);
-            progressChartRef = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Score', data: vals, borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', tension: 0.4, fill: true, pointRadius: 4 }, { label: 'Objectif', data: goal, borderColor: '#eab308', borderDash: [5, 5], pointRadius: 0, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero: true, max: 35, grid: {color:'rgba(255,255,255,0.05)'}, ticks:{font:{size:8}, color:'#6b7280'} }, x: { display:false } } } });
         }
 
         initAuth();
