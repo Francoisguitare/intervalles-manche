@@ -14,24 +14,19 @@
         body { font-family: 'Inter', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; overflow: hidden; }
         .bg-gia-gradient { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); position: relative; height: 100vh; width: 100vw; }
         
-        /* --- LAYOUT --- */
+        /* Layout */
         .app-layout { display: grid; grid-template-columns: 1fr; height: 100vh; width: 100vw; overflow: hidden; }
         @media (min-width: 1024px) { .app-layout { grid-template-columns: 1fr 200px; } }
 
-        /* --- SIDEBAR (CAMPUS) --- */
+        /* Sidebar */
         .sidebar-glass { background: rgba(2, 6, 23, 0.6); border-left: 1px solid rgba(255, 255, 255, 0.03); }
-        .feed-item { 
-            font-size: 10px; color: #9ca3af; padding: 1px 0; 
-            display: flex; align-items: center; gap: 4px; 
-            white-space: nowrap; overflow: hidden;
-            line-height: 1.4;
-        }
+        .feed-item { font-size: 10px; color: #9ca3af; padding: 1px 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; line-height: 1.4; }
         .feed-item:hover { color: #e5e7eb; }
         
-        /* --- MAIN CONTENT --- */
+        /* Main Content */
         .main-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 1rem; overflow-y: auto; position: relative; }
 
-        /* --- GAME & PATH --- */
+        /* Path Styling */
         .path-container-inner { padding: 10px 0 40px 0; display: flex; flex-direction: column; align-items: center; width: 100%; }
         .path-svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
         .path-node-wrapper { position: relative; z-index: 10; display: flex; justify-content: center; margin-bottom: 25px; width: 100%; }
@@ -42,6 +37,7 @@
         .path-node-btn.completed { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #fbbf24; }
         .stars-container { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); display: flex; gap: 1px; background: rgba(0,0,0,0.9); padding: 1px 4px; rounded-full; border: 1px solid #334155; }
 
+        /* UI Elements */
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .btn-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
         .note-dot { transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 30; }
@@ -71,8 +67,11 @@
         .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
         
-        /* Finder Mode Specifics */
         .clickable-fret:hover { background-color: rgba(255,255,255,0.1); }
+
+        /* Tabs for Stats */
+        .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -115,7 +114,7 @@
                     </button>
 
                     <button id="start-finder-btn" class="flex-1 group w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all">
-                        <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers sur le manche</div></div>
+                        <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
                         <span class="text-3xl">⚡</span>
                     </button>
 
@@ -130,12 +129,38 @@
                     </div>
                 </div>
 
+                <!-- Stats Panel with Tabs -->
                 <div class="w-full md:w-1/2 glass-panel p-4 rounded-xl shadow-xl flex flex-col">
-                    <h3 class="text-[10px] font-bold text-white mb-2 flex justify-between items-center border-b border-slate-700/50 pb-1">
-                        <span>📊 Progression Challenge</span>
-                        <span class="text-[8px] text-yellow-500 bg-yellow-500/10 px-1.5 rounded">Obj: 30</span>
-                    </h3>
-                    <div class="relative flex-1 w-full min-h-0"><canvas id="progressionChart"></canvas></div>
+                    <div class="flex border-b border-slate-700 mb-2">
+                        <div class="stat-tab active" data-tab="challenges">CHALLENGES</div>
+                        <div class="stat-tab" data-tab="reflexes">RÉFLEXES</div>
+                        <div class="stat-tab" data-tab="pedago">DIFFICULTÉS</div>
+                        <div class="stat-tab" data-tab="leaderboard">CLASSEMENT</div>
+                    </div>
+                    
+                    <div id="stats-content-challenges" class="flex-1 w-full min-h-0 flex flex-col">
+                        <div class="text-[9px] text-slate-400 mb-1 text-right">Objectif: 30pts</div>
+                        <div class="relative flex-1 w-full min-h-0"><canvas id="chart-challenges"></canvas></div>
+                    </div>
+                    
+                    <div id="stats-content-reflexes" class="flex-1 w-full min-h-0 flex flex-col hidden">
+                        <div class="text-[9px] text-slate-400 mb-1 text-right">Rapidité & Précision</div>
+                        <div class="relative flex-1 w-full min-h-0"><canvas id="chart-reflexes"></canvas></div>
+                    </div>
+
+                    <div id="stats-content-pedago" class="flex-1 w-full min-h-0 overflow-y-auto custom-scroll hidden">
+                        <table class="w-full text-[10px]">
+                            <thead class="text-slate-500 border-b border-slate-700"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Temps</th></tr></thead>
+                            <tbody id="pedago-body" class="text-slate-300"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="stats-content-leaderboard" class="flex-1 w-full min-h-0 overflow-y-auto custom-scroll hidden">
+                         <table class="w-full text-[10px]">
+                             <thead class="text-slate-500 border-b border-slate-700"><tr><th class="text-left p-1">#</th><th class="text-left p-1">Joueur</th><th class="text-right p-1">Pts Campus</th></tr></thead>
+                             <tbody id="leaderboard-body" class="text-slate-300"></tbody>
+                         </table>
+                    </div>
                     <p id="chart-loading" class="text-center text-slate-500 text-[9px] mt-1 hidden">Chargement...</p>
                 </div>
             </div>
@@ -212,7 +237,7 @@
         <div id="app-sidebar" class="sidebar-container fixed top-0 right-0 bottom-0 w-[200px] lg:relative lg:w-auto lg:block hidden transform lg:transform-none transition-transform z-40">
             <div class="sidebar-content h-full sidebar-glass border-l border-white/5 flex flex-col">
                 <div class="p-2 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                    <h3 class="text-slate-500 font-bold text-[9px] uppercase">Activité Campus</h3>
+                    <h3 class="text-slate-500 font-bold text-[9px] uppercase">Top 10 Campus</h3>
                     <button id="close-sidebar-mobile" class="lg:hidden text-slate-400 hover:text-white text-xs">✕</button>
                 </div>
                 <div class="flex-1 overflow-y-auto custom-scroll p-0" id="sidebar-feed"></div>
@@ -227,7 +252,7 @@
     <div id="create-profile-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[70]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-slate-700"><h2 class="text-sm font-bold text-white mb-4">Nouveau Profil</h2><input type="text" id="new-username-input" class="w-full bg-black/50 text-white p-2 rounded border border-slate-600 text-xs mb-4" placeholder="Prénom"><div class="grid grid-cols-2 gap-2"><button id="cancel-create-profile" class="bg-slate-800 text-slate-300 py-1 rounded text-xs">Annuler</button><button id="confirm-create-profile" class="bg-sky-600 text-white py-1 rounded text-xs font-bold">Créer</button></div></div></div>
     <div id="error-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[80]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-red-900/50"><div class="text-4xl mb-2">👀</div><h2 class="text-sm font-bold text-white">Regarde bien !</h2><p class="text-slate-400 text-[10px] mb-4">Compte les cases...</p><button id="close-error-btn" class="w-full bg-white text-black py-1.5 rounded text-xs font-bold">OK</button></div></div>
     <div id="pin-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-yellow-900/30"><h2 class="text-xs font-bold text-white mb-4">Admin PIN</h2><input type="password" id="pin-input" class="w-full bg-black/50 text-white text-center p-2 rounded border border-slate-600 mb-4" placeholder="••••"><div class="grid grid-cols-2 gap-2"><button id="cancel-pin-btn" class="bg-slate-800 text-white py-1 rounded text-xs">Annuler</button><button id="validate-pin-btn" class="bg-yellow-700 text-black py-1 rounded text-xs font-bold">Go</button></div></div></div>
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div></div></div></div>
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button><button id="tab-errors-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Suivi Pédago</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div><div id="admin-errors-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-errors-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>J</th><th>Type</th><th>Détail</th><th>Tps</th></tr></thead><tbody id="admin-errors-tbody"></tbody></table></div></div></div></div></div>
     <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[70]"><div class="bg-slate-900 border border-red-900 rounded-xl p-6 w-64 text-center"><h2 class="text-sm font-bold text-white mb-2">Confirmer ?</h2><p id="delete-message" class="text-slate-400 text-[10px] mb-4"></p><div class="flex gap-2"><button id="cancel-delete-btn" class="flex-1 bg-slate-800 text-white py-1 rounded text-xs">Non</button><button id="confirm-delete-btn" class="flex-1 bg-red-800 text-white py-1 rounded text-xs">Oui</button></div></div></div>
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
     <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
@@ -243,7 +268,8 @@
         let app, auth, db, appId;
         try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'gia-trainer-v1'; } catch (e) { console.error(e); }
 
-        let currentUserPseudo = '', existingUsers = [], progressChart = null, itemToDelete = null, levelProgressMap = {};
+        let currentUserPseudo = '', existingUsers = [], progressChart = null, reflexChart = null, itemToDelete = null, levelProgressMap = {}, currentStatsTab = 'challenges', allScoresForLeaderboard = [], allPedagoEvents = [];
+        let questionStartTime = 0;
         const el = (id) => document.getElementById(id);
         const show = (id) => { const e = el(id); if(e) e.classList.remove('hidden'); };
         const hide = (id) => { const e = el(id); if(e) e.classList.add('hidden'); };
@@ -281,22 +307,46 @@
         safeListener('cancel-create-profile', 'click', ()=>hide('create-profile-modal'));
         safeListener('confirm-create-profile', 'click', async ()=>{ const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
 
-        async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); showMainMenu(); }
+        async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); await fetchUserPedago(); showMainMenu(); }
 
-        function listenForActivityFeed() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { const s = []; snap.forEach(d => s.push(d.data())); s.sort((a,b)=>b.timestamp-a.timestamp); renderSidebar(s); }); }
+        function listenForActivityFeed() { 
+            if(!db) return; 
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { 
+                const s = []; snap.forEach(d => s.push(d.data())); 
+                allScoresForLeaderboard = s; 
+                renderSidebar(s); 
+                if(currentUserPseudo) updateStatsView(); 
+            }); 
+        }
+        
         function renderSidebar(s) { 
+            const userTotals = {};
+            s.forEach(x => {
+                if(!userTotals[x.pseudo]) userTotals[x.pseudo] = 0;
+                userTotals[x.pseudo] += x.score;
+            });
+            const leaderboard = Object.entries(userTotals).map(([pseudo, score]) => ({pseudo, score})).sort((a,b) => b.score - a.score);
+
             const c = el('sidebar-feed'); c.innerHTML = ''; 
-            s.slice(0,50).forEach(x => { 
+            leaderboard.slice(0,10).forEach((x, i) => { 
                 const d = document.createElement('div'); d.className = 'feed-item';
-                let mode = x.mode.replace("Niveau", "Niv").replace("Challenge", "Chall");
-                let icon = (x.score >= (x.total||30)) ? '🎉' : '';
+                let icon = '';
+                if(i===0) icon='🥇'; else if(i===1) icon='🥈'; else if(i===2) icon='🥉';
                 let initial = x.pseudo.charAt(0).toUpperCase();
-                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-3 h-3 rounded-full bg-indigo-600 flex items-center justify-center text-[6px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300">${x.pseudo} <span class="text-slate-500">• ${mode}</span></span><span class="${icon?'text-green-400':'text-yellow-500'} font-bold ml-1 flex items-center">${x.score} <span class="text-[8px] ml-0.5">${icon}</span></span></div></div>`;
+                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-4 h-4 rounded-full bg-indigo-600 flex items-center justify-center text-[7px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300 font-bold text-[10px]">${i+1}. ${x.pseudo}</span><span class="text-yellow-400 font-bold ml-1 text-[10px]">${x.score} pts ${icon}</span></div></div>`;
                 c.appendChild(d); 
             }); 
         }
 
         async function fetchUserScores() { if(!db) return; const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')); const snap = await getDocs(q); levelProgressMap = {}; snap.forEach(d => { const data = d.data(); if(data.pseudo === currentUserPseudo && data.mode.startsWith('Niveau') && data.score>=30) { const m = data.mode.match(/Niveau (\d+)/); if(m) { const l = parseInt(m[1]); levelProgressMap[l] = (levelProgressMap[l]||0)+1; } } }); }
+
+        async function fetchUserPedago() {
+            if(!db) return;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'));
+            const snap = await getDocs(q);
+            allPedagoEvents = [];
+            snap.forEach(d => allPedagoEvents.push(d.data()));
+        }
 
         safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
         window.addEventListener('resize', ()=>{ if(window.innerWidth>=1024) el('app-sidebar').style.display='block'; else el('app-sidebar').style.display='none'; });
@@ -305,9 +355,21 @@
         safeListener('admin-access-btn', 'click', ()=>{show('pin-modal'); el('pin-input').value='';});
         safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
         safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
-        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions);
-        function switchAdminTab(t) { if(t==='users'){ show('admin-users-view'); hide('admin-sessions-view'); renderAdminUsers(); } else { hide('admin-users-view'); show('admin-sessions-view'); renderAdminSessions(); } }
+        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
+        
+        function switchAdminTab(t) { 
+            hide('admin-users-view'); hide('admin-sessions-view'); hide('admin-errors-view');
+            el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
+            el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
+            el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
+            
+            if(t==='users'){ show('admin-users-view'); el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsers(); } 
+            else if(t==='sessions') { show('admin-sessions-view'); el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminSessions(); }
+            else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminErrors(); }
+        }
+        
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
+        
         async function renderAdminSessions() { 
             const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; 
             const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); 
@@ -315,14 +377,44 @@
             l.forEach(x=>{ 
                 const r=document.createElement('tr'); 
                 const dateObj = new Date(x.timestamp);
-                const dStr = dateObj.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
-                const tStr = dateObj.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-                r.innerHTML=`<td><div class="flex flex-col leading-tight"><span>${dStr}</span><span class="text-slate-500 text-[9px]">${tStr}</span></div></td><td class="font-bold text-white">${x.pseudo}</td><td class="text-sky-400 text-[10px]">${x.mode}</td><td class="font-mono font-bold text-yellow-400">${x.score}/${x.total||'?'}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; 
+                r.innerHTML=`<td><div class="flex flex-col leading-tight"><span>${dateObj.toLocaleDateString('fr-FR')}</span><span class="text-slate-500 text-[9px]">${dateObj.toLocaleTimeString('fr-FR')}</span></div></td><td class="font-bold text-white">${x.pseudo}</td><td class="text-sky-400 text-[10px]">${x.mode}</td><td class="font-mono font-bold text-yellow-400">${x.score}/${x.total||'?'}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; 
                 r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Score ${x.score} (${x.pseudo})`); 
                 b.appendChild(r); 
             }); 
         }
+
+        async function renderAdminErrors() {
+            const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return;
+            const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100)));
+            b.innerHTML='';
+            s.forEach(doc => {
+                const x = doc.data();
+                const r=document.createElement('tr');
+                const color = x.type === 'error' ? 'text-red-400' : 'text-yellow-400';
+                r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${color} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td>`;
+                b.appendChild(r);
+            });
+        }
         
+        async function logPedagoEvent(type, detail, time) {
+            if(!db || !currentUserPseudo) return;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), {
+                    pseudo: currentUserPseudo,
+                    type: type, // 'error' or 'slow'
+                    detail: detail,
+                    time: time.toFixed(1),
+                    timestamp: Date.now()
+                });
+                // Refresh local data if needed? No need, admin does fetch
+                allPedagoEvents.push({pseudo: currentUserPseudo, type, detail, time, timestamp: Date.now()});
+                // If user is on pedago tab, refresh?
+                if(currentStatsTab === 'pedago') updateStatsView();
+            } catch(e) {}
+        }
+        // Expose for game
+        window.logPedagoEvent = logPedagoEvent;
+
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
         safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
         safeListener('confirm-delete-btn', 'click', async ()=>{ if(itemToDelete){ try{ await deleteDoc(doc(db,'artifacts',appId,'public','data',itemToDelete.t==='user'?'users':'scores',itemToDelete.id)); }catch(e){alert(e);} hide('confirm-delete-modal'); if(itemToDelete.t==='user') renderAdminUsers(); else renderAdminSessions(); } });
@@ -332,8 +424,16 @@
         window.saveScoreToFirebase = async (s, m, t) => { if(!db||!currentUserPseudo)return; try{ await addDoc(collection(db,'artifacts',appId,'public','data','scores'), {pseudo:currentUserPseudo, score:s, total:t, mode:m, timestamp:Date.now()}); if(m.startsWith("Niveau") && s>=30){ const ma = m.match(/Niveau (\d+)/); if(ma) levelProgressMap[parseInt(ma[1])] = (levelProgressMap[parseInt(ma[1])]||0)+1; } }catch(e){} };
         window.getLevelProgress = () => levelProgressMap;
 
-        // MAIN UI
-        let progressChartRef = null;
+        // STATS TABS
+        document.querySelectorAll('.stat-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.stat-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentStatsTab = e.target.dataset.tab;
+                updateStatsView();
+            });
+        });
+
         function showMainMenu() {
             el('display-username').textContent = currentUserPseudo; hide('login-screen'); hide('challenge-selection-menu'); hide('app-container'); hide('review-path-menu'); show('main-menu');
             const maxLvl = Object.keys(levelProgressMap).reduce((a,b)=>Math.max(a, parseInt(b)), 0);
@@ -342,22 +442,100 @@
             const btn = el('open-challenge-btn');
             if(unlocked) { btn.className = 'flex-1 group w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-4 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; btn.innerHTML = `<div><div class="text-lg font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; btn.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); }; }
             else { btn.onclick=null; }
-            loadChartData();
+            updateStatsView();
         }
 
-        function loadChartData() {
-            if(!db) return; const loader = el('chart-loading'); if(loader) loader.classList.remove('hidden'); 
-            if(progressChartRef) { progressChartRef.destroy(); progressChartRef = null; }
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => {
-                const scores=[]; snap.forEach(d=>{ const da=d.data(); if(da.pseudo===currentUserPseudo && da.mode.includes("Challenge")) scores.push(da); });
-                const dayBest={}; scores.forEach(s=>{ const d=new Date(s.timestamp).toISOString().split('T')[0]; if(!dayBest[d] || s.score > dayBest[d].score) dayBest[d]=s; });
-                const sorted=Object.values(dayBest).sort((a,b)=>a.timestamp-b.timestamp);
-                const ctx = el('progressionChart').getContext('2d');
-                const labels = sorted.map(d => new Date(d.timestamp).toLocaleDateString('fr-FR', {day:'numeric', month:'short'}));
-                const data = sorted.map(d => d.score);
-                const goal = Array(data.length).fill(30);
-                progressChartRef = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Score', data, borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', tension: 0.4, fill: true, pointRadius: 3 }, { label: 'Objectif', data: goal, borderColor: '#eab308', borderDash: [4, 4], pointRadius: 0, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero: true, max: 35, grid: {color:'rgba(255,255,255,0.05)'}, ticks:{font:{size:8}, color:'#6b7280'} }, x: { display:false } } } });
-                if(loader) loader.classList.add('hidden');
+        function updateStatsView() {
+            if(!db) return;
+            hide('stats-content-challenges'); hide('stats-content-reflexes'); hide('stats-content-leaderboard'); hide('stats-content-pedago');
+            
+            if(currentStatsTab === 'challenges') {
+                show('stats-content-challenges');
+                processChart('chart-challenges', 'Challenge', progressChart, (c) => progressChart = c);
+            } else if(currentStatsTab === 'reflexes') {
+                show('stats-content-reflexes');
+                processChart('chart-reflexes', 'Réflexes', reflexChart, (c) => reflexChart = c);
+            } else if (currentStatsTab === 'pedago') {
+                show('stats-content-pedago');
+                processPedagoUserView();
+            } else {
+                show('stats-content-leaderboard');
+                processLeaderboard();
+            }
+        }
+
+        function processChart(canvasId, filterKey, chartRef, setChartRef) {
+            const scores = allScoresForLeaderboard.filter(d => d.pseudo === currentUserPseudo && d.mode.includes(filterKey));
+            const dayBest = {}; 
+            scores.forEach(s => { 
+                const d = new Date(s.timestamp).toISOString().split('T')[0]; 
+                if(!dayBest[d] || s.score > dayBest[d].score) dayBest[d] = s; 
+            });
+            const sorted = Object.values(dayBest).sort((a,b) => a.timestamp - b.timestamp);
+            
+            const ctx = el(canvasId).getContext('2d');
+            if(chartRef) chartRef.destroy();
+            
+            const labels = sorted.map(d => new Date(d.timestamp).toLocaleDateString('fr-FR', {day:'numeric', month:'short'}));
+            const data = sorted.map(d => d.score);
+            const goal = Array(data.length).fill(30); 
+            
+            const newChart = new Chart(ctx, { 
+                type: 'line', 
+                data: { 
+                    labels, 
+                    datasets: [{ label: 'Score', data, borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', tension: 0.4, fill: true, pointRadius: 3 }, { label: 'Objectif', data: goal, borderColor: '#eab308', borderDash: [4, 4], pointRadius: 0, borderWidth: 1 }] 
+                }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { y: { beginAtZero: true, max: 35, grid: {color:'rgba(255,255,255,0.05)'}, ticks:{font:{size:8}, color:'#6b7280'} }, x: { display:false } } } 
+            });
+            setChartRef(newChart);
+        }
+        
+        function processPedagoUserView() {
+            const tbody = el('pedago-body');
+            tbody.innerHTML = '';
+            // Filter for current user
+            const userEvents = allPedagoEvents.filter(e => e.pseudo === currentUserPseudo).sort((a,b) => b.timestamp - a.timestamp).slice(0, 20);
+            
+            if(userEvents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 italic p-2">Aucune difficulté enregistrée. Bravo !</td></tr>';
+                return;
+            }
+            
+            userEvents.forEach(x => {
+                const tr = document.createElement('tr');
+                const color = x.type === 'error' ? 'text-red-400' : 'text-yellow-400';
+                const icon = x.type === 'error' ? '❌' : '🐢';
+                tr.innerHTML=`<td class="${color} font-bold p-1 border-b border-slate-800">${icon}</td><td class="text-slate-300 p-1 border-b border-slate-800 truncate max-w-[100px]" title="${x.detail}">${x.detail}</td><td class="font-mono text-right p-1 border-b border-slate-800">${x.time}s</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function processLeaderboard() {
+            const usersMap = {};
+            allScoresForLeaderboard.forEach(s => {
+                if(!usersMap[s.pseudo]) usersMap[s.pseudo] = { pseudo: s.pseudo, bronze:0, silver:0, gold:0, reflex:0 };
+                if(s.mode.includes("Bronze") && s.score > usersMap[s.pseudo].bronze) usersMap[s.pseudo].bronze = s.score;
+                if(s.mode.includes("Argent") && s.score > usersMap[s.pseudo].silver) usersMap[s.pseudo].silver = s.score;
+                if(s.mode.includes("Or") && s.score > usersMap[s.pseudo].gold) usersMap[s.pseudo].gold = s.score;
+                if(s.mode.includes("Réflexes") && s.score > usersMap[s.pseudo].reflex) usersMap[s.pseudo].reflex = s.score;
+            });
+            
+            const sortedUsers = Object.values(usersMap).map(u => ({
+                ...u,
+                total: u.bronze + u.silver + u.gold + u.reflex
+            })).sort((a,b) => b.total - a.total);
+
+            const tbody = el('leaderboard-body');
+            tbody.innerHTML = '';
+            sortedUsers.slice(0,20).forEach((u, i) => {
+                const tr = document.createElement('tr');
+                let medal = '';
+                if(i===0) medal='🥇'; else if(i===1) medal='🥈'; else if(i===2) medal='🥉';
+                const isMe = u.pseudo === currentUserPseudo ? 'bg-indigo-900/30' : '';
+                tr.className = isMe;
+                tr.innerHTML = `<td class="p-1 border-b border-slate-800">${i+1} ${medal}</td><td class="p-1 border-b border-slate-800 font-bold text-white">${u.pseudo}</td><td class="p-1 border-b border-slate-800 text-right font-mono text-sky-400">${u.total}</td>`;
+                tbody.appendChild(tr);
             });
         }
 
@@ -384,7 +562,7 @@
             
             const FINDER_INTERVALS = [
                 { id: '5asc', name: "Quinte Supérieure", val: 7, dir: 1 },
-                { id: '5desc', name: "Quinte Inférieure", val: 5, dir: -1 },
+                { id: '5desc', name: "Quinte Inférieure", val: 5, dir: -1 }, 
                 { id: '8asc', name: "Octave Supérieure", val: 12, dir: 1 },
                 { id: '8desc', name: "Octave Inférieure", val: 12, dir: -1 }
             ];
@@ -435,26 +613,12 @@
                 currentMode = 'finder';
                 score = 0; lives = 3;
                 el('app-title').textContent = "Réflexes 5te/8ve";
-                
-                // Hide standard UI
-                hide('game-ui-bar'); 
-                hide('review-lesson-box'); 
-                hide('review-progress-bar-container');
-                hide('answer-buttons'); // No buttons here!
+                hide('game-ui-bar'); hide('review-lesson-box'); hide('review-progress-bar-container'); hide('answer-buttons'); 
                 show('training-section-controls');
-                el('feedback-message').textContent = '';
-                el('question-title').textContent = '';
-                
-                // Show lives/score in a simpler way
-                show('game-ui-bar');
-                el('timer-display').parentElement.classList.remove('hidden'); // Show timer
-                updateScore(); updateLives();
-                
-                startTimer(180); // 180s timer
-
-                hideAll(); show('app-container');
-                gameInProgress = true;
-                newFinderQuestion();
+                el('feedback-message').textContent = ''; el('question-title').textContent = '';
+                show('game-ui-bar'); el('timer-display').parentElement.classList.remove('hidden');
+                updateScore(); updateLives(); startTimer(180); 
+                hideAll(); show('app-container'); gameInProgress = true; newFinderQuestion();
             }
 
             const newFinderQuestion = () => {
@@ -462,75 +626,51 @@
                 document.querySelectorAll('.note-dot').forEach(n=>n.remove()); 
                 el('feedback-message').innerHTML = '<span class="text-sky-400">Cliquez sur la réponse</span>';
                 el('new-question-btn').classList.add('btn-disabled'); 
-                
-                // 1. Pick Task
                 const task = FINDER_INTERVALS[Math.floor(Math.random() * FINDER_INTERVALS.length)];
                 finderTarget = task;
                 el('question-title').textContent = `Trouvez : ${task.name}`;
+                questionStartTime = Date.now();
 
-                // 2. Find valid root
                 let valid = false, s, f, p1, p2;
                 while(!valid) {
-                    s = Math.floor(Math.random() * NUM_STRINGS);
-                    f = Math.floor(Math.random() * 10) + 2;
-                    p1 = TUNING[s] + f;
-                    p2 = p1 + (task.val * task.dir);
-                    
+                    s = Math.floor(Math.random() * NUM_STRINGS); f = Math.floor(Math.random() * 10) + 2;
+                    p1 = TUNING[s] + f; p2 = p1 + (task.val * task.dir);
                     let possibleTargets = [];
-                    for(let ts=0; ts<NUM_STRINGS; ts++) {
-                        let tf = p2 - TUNING[ts];
-                        if (tf >= 0 && tf <= 15) possibleTargets.push({string:ts, fret:tf});
-                    }
-                    
-                    if(possibleTargets.length > 0) {
-                        valid = true;
-                        rootNote = {string:s, fret:f};
-                    }
+                    for(let ts=0; ts<NUM_STRINGS; ts++) { let tf = p2 - TUNING[ts]; if (tf >= 0 && tf <= 15) possibleTargets.push({string:ts, fret:tf}); }
+                    if(possibleTargets.length > 0) { valid = true; rootNote = {string:s, fret:f}; }
                 }
-
-                // 3. Show Root
                 const rVal=getVal(rootNote);
                 placeNote(rootNote, 'F', {note: (Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]});
-                
-                // Scroll
                 const n=el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
             };
 
             const handleFinderClick = (s, f) => {
                 if(currentMode !== 'finder' || !gameInProgress) return;
                 if(!soundReady) initSound();
+                const timeTaken = (Date.now() - questionStartTime) / 1000;
                 
                 const pRoot = getAbsPitch(rootNote);
                 const pClicked = getAbsPitch({string:s, fret:f});
                 const diff = pClicked - pRoot;
                 const expectedDiff = finderTarget.val * finderTarget.dir;
+                const t = getNote({string:s, fret:f}); synth.triggerAttackRelease(t, "8n");
                 
-                const t = getNote({string:s, fret:f});
-                synth.triggerAttackRelease(t, "8n");
-
                 if(diff === expectedDiff) {
-                    placeNote({string:s, fret:f}, 'T'); // Green
-                    el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
+                    placeNote({string:s, fret:f}, 'T'); el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
                     score++; updateScore();
+                    if(timeTaken > 10) window.logPedagoEvent('slow', `${finderTarget.name} en ${timeTaken.toFixed(1)}s`, timeTaken);
                     el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
-                    // Auto-save milestones? Maybe only at end
                 } else {
-                    placeNote({string:s, fret:f}, 'X'); // Red
-                    el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
-                    lives--; updateLives();
-                    if(lives <= 0) setTimeout(() => endGame(false), 1000);
+                    placeNote({string:s, fret:f}, 'X'); el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
+                    window.logPedagoEvent('error', `Cherchait ${finderTarget.name}`, timeTaken);
+                    lives--; updateLives(); if(lives <= 0) setTimeout(() => endGame(false), 1000);
                 }
             };
-
 
             const startReview=(id,k,t)=>{ activeIntervalKeys=k; currentMode='review'; score=0; el('app-title').textContent=t; hide('game-ui-bar'); show('training-section-controls'); show('review-lesson-box'); show('review-progress-bar-container'); show('answer-buttons'); updateProg(0); el('lesson-content').innerHTML=k.map(x=>`<span class="bg-indigo-900/50 text-indigo-200 px-1 rounded font-mono font-bold">${x}</span>`).join(' '); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
             const startChallenge=(k)=>{ currentMode='challenge'; currentChallenge={...CHALLENGES[k],key:k}; activeIntervalKeys=[...intervalKeys]; lives=currentChallenge.lives; score=0; el('app-title').textContent=`Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
             
-            const updateProg=(v)=>{ 
-                const p=(v/30)*100; 
-                el('review-progress-fill').style.width=`${p}%`; 
-                if(el('review-progress-text')) el('review-progress-text').textContent=`${v}/30`; 
-            };
+            const updateProg=(v)=>{ const p=(v/30)*100; el('review-progress-fill').style.width=`${p}%`; if(el('review-progress-text')) el('review-progress-text').textContent=`${v}/30`; };
             const updateScore=()=>{ if(el('score-display')) el('score-display').textContent=`${score}${currentChallenge ? '/' + currentChallenge.goal : ''}`; };
             const updateLives=()=>{ if(el('lives-display')) el('lives-display').innerHTML='❤️'.repeat(lives); };
             const startTimer=(s)=>{ if(timerInterval)clearInterval(timerInterval); timeLeft=s; show('timer-display'); el('timer-display').textContent=s; timerInterval=setInterval(()=>{ timeLeft--; el('timer-display').textContent=timeLeft; if(timeLeft<=0)endGame(false); },1000); };
@@ -541,6 +681,7 @@
                 let sem=(getVal(targetNote)-getVal(rootNote)+12)%12; if(sem===0)sem=12; correctInterval=Object.keys(INTERVALS).find(k=>INTERVALS[k]===sem);
                 const rVal=getVal(rootNote); placeNote(rootNote,'F',{note:(Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]}); placeNote(targetNote,'T');
                 const n=el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
+                questionStartTime = Date.now();
                 genChoices(); setTimeout(playInterval,300);
             };
 
@@ -549,30 +690,47 @@
             const handle=(sel,btn)=>{ if(!gameInProgress)return; if(!soundReady)initSound(); const ok=sel===correctInterval;
                 if(currentMode==='review'&&!ok){ show('error-modal'); return; }
                 el('answer-buttons').querySelectorAll('button').forEach(b=>{ b.disabled=true; if(b.textContent===correctInterval)b.classList.add('correct'); else if(b===btn&&!ok)b.classList.add('incorrect'); else b.classList.add('opacity-20'); });
+                
+                const timeTaken = (Date.now() - questionStartTime) / 1000;
+
                 if(ok){ 
                     el('feedback-message').innerHTML=`<span class="text-emerald-400">Bravo !</span>`; score++; 
+                    if(timeTaken > 10) window.logPedagoEvent('slow', `Trouver ${correctInterval} en ${timeTaken.toFixed(1)}s`, timeTaken);
                     if(currentMode==='challenge'){ updateScore(); if(score>=currentChallenge.goal) setTimeout(()=>endGame(true),1000); }
                     else { updateProg(score); if(score>=30) setTimeout(()=>{ if(window.saveScoreToFirebase)window.saveScoreToFirebase(30,el('app-title').textContent,30); endGame(true); },1000); }
                 } else {
-                    el('feedback-message').innerHTML=`<span class="text-red-400">${correctInterval}</span>`; lives--; updateLives(); if(lives<=0) setTimeout(()=>endGame(false),1000);
+                    el('feedback-message').innerHTML=`<span class="text-red-400">${correctInterval}</span>`; 
+                    window.logPedagoEvent('error', `Voulait ${correctInterval}, a cliqué ${sel}`, timeTaken);
+                    lives--; updateLives(); if(lives<=0) setTimeout(()=>endGame(false),1000);
                 }
                 el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
             };
 
             const endGame=(win)=>{ if(timerInterval)clearInterval(timerInterval); gameInProgress=false; el('end-game-buttons').innerHTML='';
-                // Fix save: use explicit mode name for filter
                 let modeName = currentMode === 'challenge' ? 'Challenge ' + currentChallenge.name : (currentMode === 'finder' ? 'Réflexes' : 'Aventure');
                 let goalVal = currentMode === 'challenge' ? currentChallenge.goal : 30;
-                
                 if(window.saveScoreToFirebase) window.saveScoreToFirebase(score, modeName, goalVal);
-                
                 el('end-game-title').textContent=win?"VICTOIRE !":"FIN"; el('end-game-title').className=win?'text-2xl font-black text-emerald-500':'text-2xl font-black text-red-500';
                 el('end-game-message').textContent=win?"Validé !":`Score: ${score}`;
+                
+                const replayBtn = document.createElement('button');
+                replayBtn.className = "bg-white text-black hover:bg-gray-200 py-2 rounded font-bold w-full text-xs";
+                replayBtn.textContent = "Rejouer";
+                replayBtn.onclick = () => {
+                    hide('end-game-modal');
+                    if(currentMode === 'challenge') startChallenge(currentChallenge.key);
+                    else if(currentMode === 'finder') startFinderMode();
+                    else { 
+                        hideAll(); renderPath3D(); show('review-path-menu');
+                    }
+                };
+                el('end-game-buttons').appendChild(replayBtn);
+
                 if(win&&currentChallenge?.next) el('end-game-buttons').innerHTML+=`<button class="bg-blue-600 text-white py-1.5 rounded font-bold w-full mb-1 text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); window.startChallenge('${currentChallenge.next}')">Suivant</button>`;
                 el('end-game-buttons').innerHTML+=`<button class="bg-slate-700 text-white py-1.5 rounded w-full text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); location.reload()">Menu</button>`;
                 show('end-game-modal');
             };
-            window.startChallenge = (k) => { currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[k], key: k }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0; el('app-title').textContent = `Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress = true; newQ(); };
+            window.startChallenge = (k) => { currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[k], key: k }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0; el('app-title').textContent = `Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); show('answer-buttons'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress = true; newQ(); };
             function placeNote(n,t,d={}){ 
                 const w=el('guitar-neck').querySelector(`[data-string='${n.string}'][data-fret='${n.fret}']`)?.parentElement; if(!w)return; 
                 if(currentMode !== 'finder' || t === 'F') w.querySelector('.note-dot')?.remove();
@@ -582,32 +740,13 @@
                 div.textContent=t==='F'?d.note:(t==='T'?'':(t==='X'?'✕':'')); 
                 w.appendChild(div); 
             }
-
             safeListen('new-question-btn', 'click', ()=>{ if(!el('new-question-btn').classList.contains('btn-disabled')){ if(currentMode==='finder') newFinderQuestion(); else {gameInProgress=true;newQ();} } });
             safeListen('replay-sound-btn', 'click', playInterval);
             safeListen('btn-brain-info', 'click', ()=>show('brain-modal')); safeListen('close-brain-btn', 'click', ()=>hide('brain-modal'));
             document.body.addEventListener('click', ()=>{if(!soundReady)initSound();}, {once:true});
             window.addEventListener('resize', ()=>{if(!el('review-path-menu').classList.contains('hidden'))renderPath3D();});
             document.querySelectorAll('.challenge-btn').forEach(b => b.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge)));
-            
-            // Init Fretboard with Click Handlers
-            (function(){ 
-                const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
-                for(let i=0;i<NUM_STRINGS;i++){ 
-                    const s=document.createElement('div'); s.className='string-container relative flex items-center h-8 md:h-9'; s.dataset.stringId=i; 
-                    const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.5)+1}px`; s.appendChild(l); 
-                    for(let j=0;j<NUM_FRETS+1;j++){ 
-                        const fw=document.createElement('div'); fw.className='fret-wrapper relative w-[40px] md:w-[50px] h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; 
-                        if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} 
-                        else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} 
-                        const a=document.createElement('div'); a.className='absolute inset-0 z-20 cursor-pointer'; a.dataset.string=i; a.dataset.fret=j; 
-                        a.onclick = () => handleFinderClick(i, j);
-                        fw.appendChild(a); s.appendChild(fw); 
-                    } n.appendChild(s); 
-                } el('guitar-neck').innerHTML=''; el('guitar-neck').appendChild(n); 
-                [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild);}); 
-                const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild)); 
-            })();
+            (function(){ const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; for(let i=0;i<NUM_STRINGS;i++){ const s=document.createElement('div'); s.className='string-container relative flex items-center h-8 md:h-9'; s.dataset.stringId=i; const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.5)+1}px`; s.appendChild(l); for(let j=0;j<NUM_FRETS+1;j++){ const fw=document.createElement('div'); fw.className='fret-wrapper relative w-[40px] md:w-[50px] h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} const a=document.createElement('div'); a.className='absolute inset-0 z-20 cursor-pointer'; a.dataset.string=i; a.dataset.fret=j; a.onclick = () => handleFinderClick(i, j); fw.appendChild(a); s.appendChild(fw); } n.appendChild(s); } el('guitar-neck').innerHTML=''; el('guitar-neck').appendChild(n); [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild);}); const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild)); })();
         });
     </script>
 </body>
