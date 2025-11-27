@@ -76,6 +76,9 @@
         .error-row { cursor: pointer; transition: background-color 0.2s; }
         .error-row:hover { background-color: rgba(255,255,255,0.05); }
         .error-row:active { background-color: rgba(255,255,255,0.1); }
+
+        /* Admin Checkbox */
+        .admin-checkbox { accent-color: #ef4444; cursor: pointer; }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -165,7 +168,7 @@
                         </div>
 
                         <div id="stats-content-pedago" class="flex-1 w-full min-h-0 flex flex-col hidden">
-                            <p class="text-[9px] text-slate-500 mb-2 italic text-center">Cliquez sur une ligne pour l'analyser en haut ↑</p>
+                            <p class="text-[9px] text-slate-500 mb-2 italic text-center">Cliquez sur une erreur pour l'afficher sur le manche du haut.</p>
                             <div class="flex-1 overflow-y-auto custom-scroll bg-black/20 rounded p-1">
                                 <table class="w-full text-[10px]">
                                     <thead class="text-slate-500 border-b border-slate-700 sticky top-0 bg-slate-900/90"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Tps</th></tr></thead>
@@ -261,6 +264,7 @@
                 <div class="flex-1 overflow-y-auto custom-scroll p-0" id="sidebar-feed"></div>
             </div>
         </div>
+        
         <button id="toggle-sidebar-btn" class="fixed top-4 right-4 lg:hidden z-40 bg-slate-800 text-white p-2 rounded shadow border border-slate-600">📡</button>
     </div>
 
@@ -269,7 +273,53 @@
     <div id="create-profile-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[70]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-slate-700"><h2 class="text-sm font-bold text-white mb-4">Nouveau Profil</h2><input type="text" id="new-username-input" class="w-full bg-black/50 text-white p-2 rounded border border-slate-600 text-xs mb-4" placeholder="Prénom"><div class="grid grid-cols-2 gap-2"><button id="cancel-create-profile" class="bg-slate-800 text-slate-300 py-1 rounded text-xs">Annuler</button><button id="confirm-create-profile" class="bg-sky-600 text-white py-1 rounded text-xs font-bold">Créer</button></div></div></div>
     <div id="error-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[80]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-red-900/50"><div class="text-4xl mb-2">👀</div><h2 class="text-sm font-bold text-white">Regarde bien !</h2><p class="text-slate-400 text-[10px] mb-4">Compte les cases...</p><button id="close-error-btn" class="w-full bg-white text-black py-1.5 rounded text-xs font-bold">OK</button></div></div>
     <div id="pin-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-yellow-900/30"><h2 class="text-xs font-bold text-white mb-4">Admin PIN</h2><input type="password" id="pin-input" class="w-full bg-black/50 text-white text-center p-2 rounded border border-slate-600 mb-4" placeholder="••••"><div class="grid grid-cols-2 gap-2"><button id="cancel-pin-btn" class="bg-slate-800 text-white py-1 rounded text-xs">Annuler</button><button id="validate-pin-btn" class="bg-yellow-700 text-black py-1 rounded text-xs font-bold">Go</button></div></div></div>
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button><button id="tab-errors-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Suivi Pédago</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div><div id="admin-errors-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-errors-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>J</th><th>Type</th><th>Détail</th><th>Tps</th></tr></thead><tbody id="admin-errors-tbody"></tbody></table></div></div></div></div></div>
+    
+    <!-- ADMIN MODAL UPDATED WITH SELECT & BULK DELETE -->
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4">
+        <div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700">
+            <div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div>
+            <div class="flex border-b border-slate-700">
+                <button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button>
+                <button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button>
+                <button id="tab-errors-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Suivi Pédago</button>
+            </div>
+            <div class="flex-1 overflow-hidden relative">
+                <div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div>
+                <div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4">
+                    <button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button>
+                    <div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div>
+                </div>
+                <!-- Pedago View Updated -->
+                <div id="admin-errors-view" class="hidden absolute inset-0 flex flex-col p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <select id="admin-pedago-user-select" class="bg-slate-800 text-white text-[10px] p-1 rounded border border-slate-600">
+                            <option value="">Choisir un élève...</option>
+                        </select>
+                        <div id="admin-pedago-actions" class="hidden">
+                            <button id="delete-selected-pedago-btn" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">Supprimer sélection</button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-auto border border-slate-800 rounded">
+                        <table class="admin-table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="w-8"><input type="checkbox" id="admin-pedago-check-all" class="admin-checkbox"></th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Détail</th>
+                                    <th>Tps</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-errors-tbody">
+                                <tr><td colspan="5" class="text-center text-slate-500 p-4">Sélectionnez un élève pour voir ses difficultés.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[70]"><div class="bg-slate-900 border border-red-900 rounded-xl p-6 w-64 text-center"><h2 class="text-sm font-bold text-white mb-2">Confirmer ?</h2><p id="delete-message" class="text-slate-400 text-[10px] mb-4"></p><div class="flex gap-2"><button id="cancel-delete-btn" class="flex-1 bg-slate-800 text-white py-1 rounded text-xs">Non</button><button id="confirm-delete-btn" class="flex-1 bg-red-800 text-white py-1 rounded text-xs">Oui</button></div></div></div>
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
     <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
@@ -278,7 +328,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI", authDomain: "intervalles-d644e.firebaseapp.com", projectId: "intervalles-d644e", storageBucket: "intervalles-d644e.firebasestorage.app", messagingSenderId: "886936254900", appId: "1:886936254900:web:d9bf38fe5d537c6e84dae1" };
         const ADMIN_SECRET = "MTgwODE5OTA="; 
@@ -286,6 +336,7 @@
         try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'gia-trainer-v1'; } catch (e) { console.error(e); }
 
         let currentUserPseudo = '', existingUsers = [], progressChart = null, reflexChart = null, itemToDelete = null, levelProgressMap = {}, currentStatsTab = 'challenges', allScoresForLeaderboard = [], allPedagoEvents = [];
+        let selectedAdminUser = null; // For Admin Pedago View
         let questionStartTime = 0;
         const el = (id) => document.getElementById(id);
         const show = (id) => { const e = el(id); if(e) e.classList.remove('hidden'); };
@@ -311,7 +362,7 @@
                 vList.innerHTML = '';
                 existingUsers.forEach(u => { const div = document.createElement('div'); div.textContent = "• " + u.pseudo; div.className = "py-1 border-b border-slate-800 last:border-0"; vList.appendChild(div); });
                 
-                if(!el('admin-modal').classList.contains('hidden')) renderAdminUsers(); 
+                if(!el('admin-modal').classList.contains('hidden')) { renderAdminUsers(); renderAdminUsersForPedago(); } 
             }); 
         }
 
@@ -371,11 +422,13 @@
         safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
         window.addEventListener('resize', ()=>{ if(window.innerWidth>=1024) el('app-sidebar').style.display='block'; else el('app-sidebar').style.display='none'; });
 
+        // --- ADMIN ---
         async function checkPin(i) { try { return btoa(i)===ADMIN_SECRET; } catch { return false; } }
         safeListener('admin-access-btn', 'click', ()=>{show('pin-modal'); el('pin-input').value='';});
         safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
         safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
-        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
+        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions);
+        
         function switchAdminTab(t) { 
             hide('admin-users-view'); hide('admin-sessions-view'); hide('admin-errors-view');
             el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
@@ -383,11 +436,97 @@
             el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
             if(t==='users'){ show('admin-users-view'); el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsers(); } 
             else if(t==='sessions') { show('admin-sessions-view'); el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminSessions(); }
-            else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminErrors(); }
+            else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsersForPedago(); }
         }
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
         async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
-        async function renderAdminErrors() { const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100))); b.innerHTML=''; s.forEach(doc => { const x = doc.data(); const r=document.createElement('tr'); r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${x.type === 'error' ? 'text-red-400' : 'text-yellow-400'} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td>`; b.appendChild(r); }); }
+        
+        // Admin Pedago Logic
+        function renderAdminUsersForPedago() {
+            const select = el('admin-pedago-user-select');
+            select.innerHTML = '<option value="">Choisir un élève...</option>';
+            existingUsers.forEach(u => {
+                const opt = document.createElement('option'); opt.value = u.pseudo; opt.textContent = u.pseudo; select.appendChild(opt);
+            });
+        }
+        
+        safeListener('admin-pedago-user-select', 'change', async () => {
+            const pseudo = el('admin-pedago-user-select').value;
+            selectedAdminUser = pseudo;
+            if(pseudo) await fetchPedagoForUser(pseudo);
+            else renderPedagoTable([]);
+        });
+
+        async function fetchPedagoForUser(pseudo) {
+            if(!db) return;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), where("pseudo", "==", pseudo));
+            const snap = await getDocs(q);
+            const events = [];
+            snap.forEach(d => events.push({id:d.id, ...d.data()}));
+            // Sort client side
+            events.sort((a,b) => b.timestamp - a.timestamp);
+            renderPedagoTable(events);
+        }
+
+        function renderPedagoTable(events) {
+            const tbody = el('admin-errors-tbody');
+            tbody.innerHTML = '';
+            el('admin-pedago-actions').classList.add('hidden');
+            
+            if(events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-500 p-4">Aucune difficulté enregistrée pour cet élève.</td></tr>';
+                return;
+            }
+            
+            events.forEach(ev => {
+                const tr = document.createElement('tr');
+                const dateStr = new Date(ev.timestamp).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
+                const color = ev.type === 'error' ? 'text-red-400' : 'text-yellow-400';
+                tr.innerHTML = `
+                    <td class="text-center"><input type="checkbox" class="admin-checkbox" value="${ev.id}"></td>
+                    <td class="text-slate-500">${dateStr}</td>
+                    <td class="${color} font-bold">${ev.type === 'error' ? 'Err' : 'Lent'}</td>
+                    <td class="text-slate-300 truncate max-w-[100px]" title="${ev.detail}">${ev.detail}</td>
+                    <td class="font-mono">${ev.time}s</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Checkbox listeners
+            const checkboxes = tbody.querySelectorAll('.admin-checkbox');
+            checkboxes.forEach(cb => cb.addEventListener('change', updateBulkDeleteState));
+        }
+
+        safeListener('admin-pedago-check-all', 'change', (e) => {
+            const checkboxes = document.querySelectorAll('#admin-errors-tbody .admin-checkbox');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+            updateBulkDeleteState();
+        });
+
+        function updateBulkDeleteState() {
+            const checked = document.querySelectorAll('#admin-errors-tbody .admin-checkbox:checked');
+            const btnDiv = el('admin-pedago-actions');
+            if(checked.length > 0) btnDiv.classList.remove('hidden'); else btnDiv.classList.add('hidden');
+        }
+
+        safeListener('delete-selected-pedago-btn', 'click', async () => {
+            const checked = document.querySelectorAll('#admin-errors-tbody .admin-checkbox:checked');
+            if(checked.length === 0) return;
+            if(!confirm(`Supprimer ces ${checked.length} éléments ?`)) return;
+
+            const batch = writeBatch(db);
+            checked.forEach(cb => {
+                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'pedago_events', cb.value);
+                batch.delete(ref);
+            });
+            
+            try {
+                await batch.commit();
+                // Refresh
+                if(selectedAdminUser) await fetchPedagoForUser(selectedAdminUser);
+            } catch(e) { alert("Erreur suppression"); }
+        });
+
 
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
         safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
@@ -439,7 +578,6 @@
                         const note = NOTES_SHARP[val%12] + Math.floor(val/12);
                         synth.triggerAttackRelease(note, "8n");
                         
-                        // Flash dot
                         const dot = document.createElement('div');
                         dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-90 pointer-events-none shadow-lg border border-white';
                         a.parentElement.appendChild(dot);
