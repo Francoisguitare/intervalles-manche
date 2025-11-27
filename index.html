@@ -50,8 +50,6 @@
         .fret-line { background-color: #9ca3af; width: 2px !important; }
         .fret-nut { background-color: #e5e5e5; }
         .string { background: #9ca3af; box-shadow: 0 1px 1px rgba(0,0,0,0.5); }
-        .clickable-area { cursor: pointer; z-index: 50; }
-        .clickable-area:hover { background-color: rgba(255, 255, 255, 0.1); }
         
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -72,13 +70,18 @@
         .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
         
+        .clickable-fret:hover { background-color: rgba(255,255,255,0.15); cursor: pointer; }
+
+        /* Tabs for Stats */
+        .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
+        
         .error-row { cursor: pointer; transition: background-color 0.2s; }
         .error-row:hover { background-color: rgba(255,255,255,0.05); }
         .error-row:active { background-color: rgba(255,255,255,0.1); }
-
-        /* Stats Tabs */
-        .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
-        .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
+        
+        .shake-anim { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -116,12 +119,13 @@
                     <div class="flex justify-between items-center mb-1 px-1">
                          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Zone de Travail (Cliquez pour jouer)</h3>
                     </div>
+                    <!-- No borders, purely interactive -->
                     <div id="pedago-neck" class="relative w-full h-24 bg-black/20 rounded-lg overflow-x-auto custom-scroll flex items-center px-2"></div>
                     <!-- LEGEND -->
                     <div class="flex gap-4 justify-center mt-1 text-[9px] text-slate-400">
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-sky-500"></div> Fondamentale (F)</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Cible (✓)</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500"></div> Erreur (✕)</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-sky-500 flex items-center justify-center text-[6px] text-white font-bold">F</div> Fondamentale</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500 flex items-center justify-center text-[6px] text-white font-bold">✓</div> Cible</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500 flex items-center justify-center text-[6px] text-white font-bold">✕</div> Erreur</span>
                     </div>
                 </div>
 
@@ -140,12 +144,12 @@
 
                         <!-- SQUELETTE BUTTON -->
                         <div id="skeleton-btn-wrapper" class="flex-1 relative shrink-0">
-                            <button id="start-finder-btn" class="w-full h-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all">
+                            <button id="start-finder-btn" class="w-full h-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all opacity-50 cursor-not-allowed">
                                 <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
                                 <span class="text-3xl">⚡</span>
                             </button>
                              <!-- Lock Overlay -->
-                            <div id="skeleton-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center hidden z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
+                            <div id="skeleton-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
                                 <span class="text-3xl mb-1">🔒</span>
                                 <span class="text-[9px] text-gray-300">Niveau 3 requis</span>
                             </div>
@@ -158,7 +162,7 @@
                                 <span class="text-2xl opacity-30">🏆</span>
                             </button>
                             <!-- Lock Overlay -->
-                            <div id="challenge-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center hidden z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
+                            <div id="challenge-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
                                 <span class="text-3xl mb-1">🔒</span>
                                 <span class="text-[9px] text-gray-300">Terminez l'Aventure</span>
                             </div>
@@ -300,24 +304,59 @@
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
     <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
 
-    <!-- Logic -->
+    <!-- MERGED LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, getDocs, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // --- CONSTANTS ---
+        const NUM_STRINGS = 6, NUM_FRETS = 15;
+        const NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+        const TUNING = [40, 45, 50, 55, 59, 64];
+        const INTERVALS_DATA = {'2m':{val:1,desc:"2m"},'2M':{val:2,desc:"2M"},'3m':{val:3,desc:"3m"},'3M':{val:4,desc:"3M"},'4J':{val:5,desc:"4J"},'5dim':{val:6,desc:"5b"},'5J':{val:7,desc:"5J"},'6m':{val:8,desc:"6m"},'6M':{val:9,desc:"6M"},'7m':{val:10,desc:"7m"},'7M':{val:11,desc:"7M"},'8J':{val:12,desc:"8J"}};
+        const INTERVALS = {}; Object.keys(INTERVALS_DATA).forEach(k => INTERVALS[k] = INTERVALS_DATA[k].val);
+        const intervalKeys = Object.keys(INTERVALS);
+
+        const PATH_LEVELS = [
+            {id:1,title:"Octaves",keys:['8J'],icon:"🎯"}, {id:2,title:"Quintes",keys:['5J'],icon:"🚀"}, {id:3,title:"Piliers",keys:['8J','5J'],icon:"🏛️"},
+            {id:4,title:"Tierce M",keys:['3M'],icon:"☀️"}, {id:5,title:"Tierce m",keys:['3m'],icon:"🌧️"}, {id:6,title:"Émotions",keys:['3M','3m'],icon:"🎭"},
+            {id:7,title:"Triades",keys:['8J','5J','3M','3m'],icon:"🧱"}, {id:8,title:"Secondes",keys:['2M','2m'],icon:"🤏"}, {id:9,title:"Sixtes",keys:['6M','6m'],icon:"🎻"},
+            {id:10,title:"Septièmes",keys:['7M','7m'],icon:"🎷"}, {id:11,title:"Triton",keys:['5dim'],icon:"😈"}, {id:12,title:"Total",keys:[...intervalKeys],icon:"🏆"}
+        ];
+
+        const CHALLENGES = { bronze:{name:'Bronze',goal:10,lives:3,time:180}, silver:{name:'Argent',goal:20,lives:3,time:180}, gold:{name:'Or',goal:30,lives:3,time:120} };
+
+        const FINDER_INTERVALS = [
+            { id: '5asc', name: "Quinte Supérieure", val: 7, dir: 1 },
+            { id: '5desc', name: "Quinte Inférieure", val: 5, dir: -1 }, 
+            { id: '8asc', name: "Octave Supérieure", val: 12, dir: 1 },
+            { id: '8desc', name: "Octave Inférieure", val: 12, dir: -1 }
+        ];
+
+        // --- FIREBASE SETUP ---
         const firebaseConfig = { apiKey: "AIzaSyAxGa7F-GVTB-zIgLQwAJglJKeIN5ldLNI", authDomain: "intervalles-d644e.firebaseapp.com", projectId: "intervalles-d644e", storageBucket: "intervalles-d644e.firebasestorage.app", messagingSenderId: "886936254900", appId: "1:886936254900:web:d9bf38fe5d537c6e84dae1" };
         const ADMIN_SECRET = "MTgwODE5OTA="; 
         let app, auth, db, appId;
         try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'gia-trainer-v1'; } catch (e) { console.error(e); }
 
+        // --- GLOBAL STATE ---
         let currentUserPseudo = '', existingUsers = [], progressChart = null, reflexChart = null, itemToDelete = null, levelProgressMap = {}, currentStatsTab = 'challenges', allScoresForLeaderboard = [], allPedagoEvents = [];
         let questionStartTime = 0;
+        
+        // Game State
+        let soundReady = false, synth, gameInProgress = false, currentMode, currentChallenge, score, lives, rootNote, targetNote, correctInterval, activeIntervalKeys, timerInterval, timeLeft;
+        let finderTarget = null;
+
+        // --- HELPERS ---
         const el = (id) => document.getElementById(id);
         const show = (id) => { const e = el(id); if(e) e.classList.remove('hidden'); };
         const hide = (id) => { const e = el(id); if(e) e.classList.add('hidden'); };
         const safeListener = (id, evt, fn) => { const e = el(id); if(e) e.addEventListener(evt, fn); };
+        const hideAll = () => { ['login-screen', 'main-menu', 'challenge-selection-menu', 'review-path-menu', 'app-container'].forEach(id => hide(id)); };
 
+        // --- AUTH & INIT ---
         const initAuth = async () => { try { await signInAnonymously(auth); listenForUsers(); listenForActivityFeed(); show('login-screen'); hide('main-menu'); } catch (e) {} };
 
         function listenForUsers() { 
@@ -341,30 +380,11 @@
             }); 
         }
 
-        safeListener('user-login-select', 'change', () => { el('user-login-btn').disabled = false; el('user-login-btn').classList.remove('opacity-50', 'cursor-not-allowed'); });
-        safeListener('user-login-btn', 'click', () => { const select = el('user-login-select'); const uid = select.value; const pseudo = select.options[select.selectedIndex].dataset.pseudo; if(uid && pseudo) finalizeLogin(pseudo, uid); });
-
-        safeListener('show-verification-btn', 'click', () => show('verification-modal'));
-        safeListener('cancel-verification', 'click', () => hide('verification-modal'));
-        safeListener('confirm-verification', 'click', () => { hide('verification-modal'); el('new-username-input').value = ''; show('create-profile-modal'); });
-        safeListener('cancel-create-profile', 'click', ()=>hide('create-profile-modal'));
-        safeListener('confirm-create-profile', 'click', async ()=>{ const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
-
         async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); await fetchUserPedago(); showMainMenu(); initPedagoFretboard(); }
 
+        // --- DATA FETCHING ---
         function listenForActivityFeed() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { const s = []; snap.forEach(d => s.push(d.data())); allScoresForLeaderboard = s; renderSidebar(s); if(currentUserPseudo) updateStatsView(); }); }
-        function renderSidebar(s) { 
-            const c = el('sidebar-feed'); c.innerHTML = ''; 
-            s.slice(0,50).forEach(x => { 
-                const d = document.createElement('div'); d.className = 'feed-item';
-                let mode = x.mode.replace("Niveau", "Niv").replace("Challenge", "Chall");
-                let icon = (x.score >= (x.total||30)) ? '🎉' : '';
-                let initial = x.pseudo.charAt(0).toUpperCase();
-                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-3 h-3 rounded-full bg-indigo-600 flex items-center justify-center text-[6px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300">${x.pseudo} <span class="text-slate-500">• ${mode}</span></span><span class="${icon?'text-green-400':'text-yellow-500'} font-bold ml-1 flex items-center">${x.score} <span class="text-[8px] ml-0.5">${icon}</span></span></div></div>`;
-                c.appendChild(d); 
-            }); 
-        }
-
+        
         async function fetchUserScores() { if(!db) return; const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')); const snap = await getDocs(q); levelProgressMap = {}; snap.forEach(d => { const data = d.data(); if(data.pseudo === currentUserPseudo && data.mode.startsWith('Niveau') && data.score>=30) { const m = data.mode.match(/Niveau (\d+)/); if(m) { const l = parseInt(m[1]); levelProgressMap[l] = (levelProgressMap[l]||0)+1; } } }); }
 
         async function fetchUserPedago() {
@@ -372,41 +392,402 @@
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'));
             const snap = await getDocs(q);
             allPedagoEvents = [];
-            snap.forEach(d => {
-                const data = d.data();
-                allPedagoEvents.push({...data, id: d.id});
-            });
+            snap.forEach(d => { allPedagoEvents.push({...d.data(), id: d.id}); });
         }
-        
+
+        async function logPedagoEvent(type, detail, time, context) {
+            if(!db || !currentUserPseudo) return;
+            try {
+                const eventData = { pseudo: currentUserPseudo, type, detail, time: time.toFixed(1), timestamp: Date.now(), context: context || null };
+                const ref = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), eventData);
+                allPedagoEvents.push({...eventData, id: ref.id});
+                if(currentStatsTab === 'pedago') updateStatsView();
+            } catch(e) {}
+        }
+        // Expose to window for inline calls if needed, though we use direct calls now
+        window.logPedagoEvent = logPedagoEvent;
+
         async function resolvePedagoEvent(intervalName) {
             if(!db || !currentUserPseudo) return;
-            const eventsToDelete = allPedagoEvents.filter(e => 
-                e.pseudo === currentUserPseudo && 
-                (e.detail.includes(intervalName) || e.detail.includes(`Cherchait ${intervalName}`))
-            );
-            
+            const eventsToDelete = allPedagoEvents.filter(e => e.pseudo === currentUserPseudo && (e.detail.includes(intervalName) || e.detail.includes(`Cherchait ${intervalName}`)));
             for(const ev of eventsToDelete) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pedago_events', ev.id));
-                    allPedagoEvents = allPedagoEvents.filter(x => x.id !== ev.id);
-                } catch(e) {}
+                try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pedago_events', ev.id)); allPedagoEvents = allPedagoEvents.filter(x => x.id !== ev.id); } catch(e) {}
             }
             if(currentStatsTab === 'pedago') updateStatsView();
         }
 
-        safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
-        safeListener('fullscreen-btn', 'click', () => {
-             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-             else if (document.exitFullscreen) document.exitFullscreen();
-        });
-        window.addEventListener('resize', ()=>{ if(window.innerWidth>=1024) el('app-sidebar').style.display='block'; else el('app-sidebar').style.display='none'; });
+        async function saveScoreToFirebase(s, m, t) { 
+            if(!db||!currentUserPseudo)return; 
+            try{ 
+                await addDoc(collection(db,'artifacts',appId,'public','data','scores'), {pseudo:currentUserPseudo, score:s, total:t, mode:m, timestamp:Date.now()}); 
+                if(m.startsWith("Niveau") && s>=30){ 
+                    const ma = m.match(/Niveau (\d+)/); 
+                    if(ma) levelProgressMap[parseInt(ma[1])] = (levelProgressMap[parseInt(ma[1])]||0)+1; 
+                } 
+            }catch(e){} 
+        }
 
-        // --- ADMIN ---
-        async function checkPin(i) { try { return btoa(i)===ADMIN_SECRET; } catch { return false; } }
-        safeListener('admin-access-btn', 'click', ()=>{show('pin-modal'); el('pin-input').value='';});
-        safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
-        safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
-        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
+        // --- GAME LOGIC (AUDIO & MECHANICS) ---
+        const initSound = async () => { if(!soundReady){ try{ await Tone.start(); synth=new Tone.PolySynth(Tone.AMSynth).toDestination(); synth.volume.value=-2; soundReady=true; }catch(e){} } };
+        const getNote = (n) => { const t = TUNING[n.string] + n.fret; return NOTES_SHARP[t%12] + Math.floor(t/12); };
+        const getVal = (n) => (TUNING[n.string] + n.fret) % 12;
+        const getAbsPitch = (n) => TUNING[n.string] + n.fret;
+
+        const playInterval = async () => { 
+            if(!soundReady) await initSound(); 
+            if(rootNote && targetNote){ 
+                const r = getNote(rootNote), t = getNote(targetNote), now = Tone.now(); 
+                synth.triggerAttackRelease(r, "8n", now); 
+                synth.triggerAttackRelease(t, "8n", now+0.4); 
+            } 
+        };
+
+        // --- MAIN MENU & NAVIGATION ---
+        function showMainMenu() {
+            el('display-username').textContent = currentUserPseudo; 
+            hideAll(); show('main-menu');
+            
+            const maxLvl = Object.keys(levelProgressMap).reduce((a,b)=>Math.max(a, parseInt(b)), 0);
+            el('adventure-progress-text').textContent = `Niveau ${Math.min(maxLvl + 1, 12)} / 12`;
+            
+            // Logic Locks
+            const skeletonBtn = el('start-finder-btn');
+            const skeletonLock = el('skeleton-lock');
+            const challengeBtn = el('open-challenge-btn');
+            const challengeLock = el('challenge-lock');
+
+            const skeletonUnlockCondition = (levelProgressMap[2]||0)>=3; 
+            if(skeletonUnlockCondition) {
+                skeletonBtn.onclick = startFinderMode;
+                skeletonLock.classList.add('hidden');
+                skeletonBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                skeletonBtn.onclick = () => { skeletonLock.classList.remove('hidden'); skeletonLock.classList.add('shake-anim'); setTimeout(()=>skeletonLock.classList.remove('shake-anim'), 500); };
+                skeletonLock.classList.remove('hidden');
+                skeletonBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            const challengeUnlockCondition = (levelProgressMap[12]||0)>=3;
+            if(challengeUnlockCondition) {
+                challengeBtn.className = 'w-full h-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-3 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center';
+                challengeBtn.innerHTML = `<div><div class="text-base font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`;
+                challengeBtn.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); };
+                challengeLock.classList.add('hidden');
+            } else {
+                challengeBtn.onclick = () => { challengeLock.classList.remove('hidden'); challengeLock.classList.add('shake-anim'); setTimeout(()=>challengeLock.classList.remove('shake-anim'), 500); };
+                challengeLock.classList.remove('hidden');
+            }
+            initPedagoFretboard();
+            updateStatsView();
+        }
+
+        // --- REVIEW / ADVENTURE MODE ---
+        function startReview(id, k, t) { 
+            activeIntervalKeys = k; currentMode = 'review'; score = 0; 
+            el('app-title').textContent = t; 
+            hide('game-ui-bar'); show('training-section-controls'); show('review-lesson-box'); show('review-progress-bar-container'); show('answer-buttons'); 
+            updateProg(0); 
+            el('lesson-content').innerHTML = k.map(x=>`<span class="bg-indigo-900/50 text-indigo-200 px-1 rounded font-mono font-bold">${x}</span>`).join(' '); 
+            hideAll(); show('app-container'); gameInProgress = true; newQ(); 
+        }
+
+        // --- FINDER / SQUELETTE MODE ---
+        function startFinderMode() {
+            currentMode = 'finder';
+            score = 0; lives = 3;
+            el('app-title').textContent = "Réflexes 5te/8ve";
+            hide('game-ui-bar'); hide('review-lesson-box'); hide('review-progress-bar-container'); hide('answer-buttons'); 
+            show('training-section-controls');
+            el('feedback-message').textContent = ''; el('question-title').textContent = '';
+            show('game-ui-bar'); el('timer-display').parentElement.classList.remove('hidden');
+            updateScore(); updateLives(); startTimer(180); 
+            hideAll(); show('app-container'); gameInProgress = true; newFinderQuestion();
+        }
+
+        function newFinderQuestion() {
+            if (!gameInProgress) return;
+            document.querySelectorAll('.note-dot').forEach(n=>n.remove()); 
+            el('feedback-message').innerHTML = '<span class="text-sky-400">Cliquez sur la réponse</span>';
+            el('new-question-btn').classList.add('btn-disabled'); 
+            const task = FINDER_INTERVALS[Math.floor(Math.random() * FINDER_INTERVALS.length)];
+            finderTarget = task;
+            el('question-title').textContent = `Trouvez : ${task.name}`;
+            questionStartTime = Date.now();
+
+            let valid = false, s, f, p1, p2;
+            while(!valid) {
+                s = Math.floor(Math.random() * NUM_STRINGS); f = Math.floor(Math.random() * 10) + 2;
+                p1 = TUNING[s] + f; p2 = p1 + (task.val * task.dir);
+                let possibleTargets = [];
+                for(let ts=0; ts<NUM_STRINGS; ts++) { let tf = p2 - TUNING[ts]; if (tf >= 0 && tf <= 15) possibleTargets.push({string:ts, fret:tf}); }
+                if(possibleTargets.length > 0) { valid = true; rootNote = {string:s, fret:f}; }
+            }
+            const rVal = getVal(rootNote);
+            placeNote(rootNote, 'F', {note: (Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]});
+            const n = el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
+        }
+
+        const handleFinderClick = (s, f) => {
+            if(currentMode !== 'finder' || !gameInProgress) return;
+            if(!soundReady) initSound();
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            
+            const pRoot = getAbsPitch(rootNote);
+            const pClicked = getAbsPitch({string:s, fret:f});
+            const diff = pClicked - pRoot;
+            const expectedDiff = finderTarget.val * finderTarget.dir;
+            const t = getNote({string:s, fret:f}); synth.triggerAttackRelease(t, "8n");
+            
+            if(diff === expectedDiff) {
+                placeNote({string:s, fret:f}, 'T'); el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
+                score++; updateScore();
+                if(timeTaken < 10) resolvePedagoEvent(finderTarget.name);
+                else logPedagoEvent('slow', `${finderTarget.name} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:{string:s, fret:f}});
+                el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
+            } else {
+                placeNote({string:s, fret:f}, 'X'); el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
+                logPedagoEvent('error', `Cherchait ${finderTarget.name}`, timeTaken, {root:rootNote, clicked:{string:s, fret:f}});
+                lives--; updateLives(); if(lives <= 0) setTimeout(() => endGame(false), 1000);
+            }
+        };
+
+        // --- CHALLENGE MODE ---
+        function startChallenge(k) { 
+            currentMode = 'challenge'; currentChallenge = {...CHALLENGES[k],key:k}; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0; 
+            el('app-title').textContent = `Challenge ${currentChallenge.name}`; 
+            show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); 
+            updateScore(); updateLives(); startTimer(currentChallenge.time); 
+            hideAll(); show('app-container'); gameInProgress = true; newQ(); 
+        }
+        // Expose to window for "Next Challenge" button in modal
+        window.startChallenge = startChallenge;
+
+        // --- SHARED QUESTION LOGIC ---
+        const newQ = () => { 
+            if(!gameInProgress) return; 
+            document.querySelectorAll('.note-dot').forEach(n=>n.remove()); 
+            el('feedback-message').textContent = ''; 
+            el('new-question-btn').classList.add('btn-disabled'); el('new-question-btn').classList.remove('btn-highlight');
+            
+            let ret=0; targetNote=null; 
+            while(!targetNote && ret<200){ 
+                const s=Math.floor(Math.random()*NUM_STRINGS), f=Math.floor(Math.random()*10)+2; 
+                rootNote={string:s,fret:f}; 
+                const pt=[]; 
+                for(let i=-2;i<=2;i++){ 
+                    const si=s+i; 
+                    if(si>=0&&si<NUM_STRINGS) for(let fr=Math.max(0,f-4);fr<=Math.min(NUM_FRETS,f+4);fr++){ 
+                        if(si===s&&fr===f)continue; 
+                        let val=(getVal({string:si,fret:fr})-getVal(rootNote)+12)%12; 
+                        if(val===0)val=12; 
+                        if(activeIntervalKeys.some(k=>INTERVALS[k]===val)) pt.push({string:si,fret:fr}); 
+                    } 
+                } 
+                targetNote = pt.length > 0 ? pt[Math.floor(Math.random()*pt.length)] : null; 
+                ret++; 
+            }
+            if(!targetNote){ newQ(); return; }
+
+            let sem = (getVal(targetNote)-getVal(rootNote)+12)%12; if(sem===0) sem=12; 
+            correctInterval = Object.keys(INTERVALS).find(k=>INTERVALS[k]===sem);
+            
+            const rVal = getVal(rootNote); 
+            placeNote(rootNote, 'F', {note:(Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]}); 
+            placeNote(targetNote, 'T');
+            const n = el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
+            questionStartTime = Date.now();
+            genChoices(); setTimeout(playInterval, 300);
+        };
+
+        const genChoices = () => { 
+            const p = activeIntervalKeys.filter(k => k !== correctInterval); 
+            let d = p.sort(() => 0.5 - Math.random()).slice(0, 3); 
+            if(d.length < 3) d = d.concat(intervalKeys.filter(k => k !== correctInterval && !d.includes(k)).slice(0, 3 - d.length)); 
+            const c = [correctInterval, ...d].sort(() => 0.5 - Math.random()); 
+            el('answer-buttons').innerHTML = ''; 
+            c.forEach(ch => { 
+                const b = document.createElement('button'); 
+                b.textContent = ch; 
+                b.className = 'answer-btn bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold py-3 rounded text-lg shadow w-full'; 
+                b.onclick = () => handleAnswer(ch, b); 
+                el('answer-buttons').appendChild(b); 
+            }); 
+        };
+
+        const handleAnswer = (sel, btn) => { 
+            if(!gameInProgress) return; 
+            if(!soundReady) initSound(); 
+            const ok = sel === correctInterval;
+            if(currentMode === 'review' && !ok){ show('error-modal'); return; }
+            
+            el('answer-buttons').querySelectorAll('button').forEach(b => { 
+                b.disabled = true; 
+                if(b.textContent === correctInterval) b.classList.add('correct'); 
+                else if(b === btn && !ok) b.classList.add('incorrect'); 
+                else b.classList.add('opacity-20'); 
+            });
+            
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            if(ok){ 
+                el('feedback-message').innerHTML = `<span class="text-emerald-400">Bravo !</span>`; score++; 
+                if(timeTaken < 10) resolvePedagoEvent(sel); 
+                else logPedagoEvent('slow', `Trouver ${correctInterval} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:targetNote});
+                
+                if(currentMode === 'challenge'){ 
+                    updateScore(); 
+                    if(score >= currentChallenge.goal) setTimeout(() => endGame(true), 1000); 
+                } else { 
+                    updateProg(score); 
+                    if(score >= 30) setTimeout(() => { saveScoreToFirebase(30, el('app-title').textContent, 30); endGame(true); }, 1000); 
+                } 
+            } else {
+                el('feedback-message').innerHTML = `<span class="text-red-400">${correctInterval}</span>`; 
+                logPedagoEvent('error', `Voulait ${correctInterval}, a cliqué ${sel}`, timeTaken, {root:rootNote, target:targetNote}); 
+                lives--; updateLives(); 
+                if(lives <= 0) setTimeout(() => endGame(false), 1000);
+            }
+            el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
+        };
+
+        const endGame = (win) => { 
+            if(timerInterval) clearInterval(timerInterval); 
+            gameInProgress = false; 
+            el('end-game-buttons').innerHTML = '';
+            let modeName = currentMode === 'challenge' ? 'Challenge ' + currentChallenge.name : (currentMode === 'finder' ? 'Réflexes' : 'Aventure');
+            let goalVal = currentMode === 'challenge' ? currentChallenge.goal : 30;
+            saveScoreToFirebase(score, modeName, goalVal);
+            
+            el('end-game-title').textContent = win ? "VICTOIRE !" : "FIN"; 
+            el('end-game-title').className = win ? 'text-2xl font-black text-emerald-500' : 'text-2xl font-black text-red-500';
+            el('end-game-message').textContent = win ? "Validé !" : `Score: ${score}`;
+            
+            const replayBtn = document.createElement('button');
+            replayBtn.className = "bg-white text-black hover:bg-gray-200 py-2 rounded font-bold w-full text-xs";
+            replayBtn.textContent = "Rejouer";
+            replayBtn.onclick = () => {
+                hide('end-game-modal');
+                if(currentMode === 'challenge') startChallenge(currentChallenge.key);
+                else if(currentMode === 'finder') startFinderMode();
+                else { hideAll(); renderPath3D(); show('review-path-menu'); }
+            };
+            el('end-game-buttons').appendChild(replayBtn);
+            if(win && currentChallenge?.next) el('end-game-buttons').innerHTML += `<button class="bg-blue-600 text-white py-1.5 rounded font-bold w-full mb-1 text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); window.startChallenge('${currentChallenge.next}')">Suivant</button>`;
+            el('end-game-buttons').innerHTML += `<button class="bg-slate-700 text-white py-1.5 rounded w-full text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); location.reload()">Menu</button>`;
+            show('end-game-modal');
+        };
+
+        // --- UI UPDATERS ---
+        const updateProg = (v) => { const p = (v / 30) * 100; el('review-progress-fill').style.width = `${p}%`; if(el('review-progress-text')) el('review-progress-text').textContent = `${v}/30`; };
+        const updateScore = () => { if(el('score-display')) el('score-display').textContent = `${score}${currentChallenge ? '/' + currentChallenge.goal : ''}`; };
+        const updateLives = () => { if(el('lives-display')) el('lives-display').innerHTML = '❤️'.repeat(lives); };
+        const startTimer = (s) => { if(timerInterval) clearInterval(timerInterval); timeLeft = s; show('timer-display'); el('timer-display').textContent = s; timerInterval = setInterval(() => { timeLeft--; el('timer-display').textContent = timeLeft; if(timeLeft <= 0) endGame(false); }, 1000); };
+
+        function placeNote(n, t, d={}){ 
+            const w = el('guitar-neck').querySelector(`[data-string='${n.string}'][data-fret='${n.fret}']`)?.parentElement; if(!w) return; 
+            if(currentMode !== 'finder' || t === 'F') w.querySelector('.note-dot')?.remove();
+            const div = document.createElement('div'); 
+            let bg = 'bg-sky-500'; if(t === 'T') bg = 'bg-indigo-500'; if(t === 'X') bg = 'bg-red-500'; if(currentMode === 'finder' && t === 'T') bg = 'bg-green-500'; 
+            div.className = `note-dot note-pop w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-bold text-xs ${bg} text-white`; 
+            div.textContent = t === 'F' ? d.note : (t === 'T' ? '' : (t === 'X' ? '✕' : '')); 
+            w.appendChild(div); 
+        }
+
+        // --- NECK & SVG RENDERING ---
+        function renderPath3D() {
+            const c = el('path-container'), l = document.createElementNS("http://www.w3.org/2000/svg", "svg"); l.setAttribute("class", "path-svg-layer"); c.innerHTML = ''; c.appendChild(l);
+            const nd = [];
+            PATH_LEVELS.forEach((lvl, i) => {
+                const prevS = i > 0 ? (levelProgressMap[lvl.id - 1] || 0) : 3; const locked = prevS < 3; const curS = levelProgressMap[lvl.id] || 0; const comp = curS >= 3;
+                const w = document.createElement('div'); w.className = 'path-node-wrapper'; w.style.transform = `translateX(${i % 2 === 0 ? '-25px' : '25px'})`;
+                const n = document.createElement('div'); n.className = `path-node-btn ${locked ? 'locked' : (comp ? 'completed' : 'unlocked')}`;
+                let starH = ''; if(!locked) starH = `<div class="stars-container"><span class="${curS >= 1 ? 'text-yellow-400' : 'text-gray-600'} text-[6px]">★</span><span class="${curS >= 2 ? 'text-yellow-400' : 'text-gray-600'} text-[6px]">★</span><span class="${curS >= 3 ? 'text-yellow-400' : 'text-gray-600'} text-[6px]">★</span></div>`;
+                n.innerHTML = `<span class="text-2xl drop-shadow-md">${locked ? '🔒' : lvl.icon}</span><div class="absolute -top-4 bg-black/60 px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-wide text-gray-300 whitespace-nowrap border border-slate-700">${lvl.title}</div>${starH}`;
+                n.onclick = () => { if(locked) return; let k = []; for(let j = 0; j <= i; j++) k = [...k, ...PATH_LEVELS[j].keys]; startReview(lvl.id, [...new Set(k)], `Niveau ${lvl.id} : ${lvl.title}`); };
+                w.appendChild(n); c.appendChild(w); nd.push(n);
+            });
+            setTimeout(() => drawSVG(l, nd, c), 50);
+        }
+
+        function drawSVG(s, n, c) { 
+            const r = c.getBoundingClientRect(); let p = ""; s.setAttribute("height", c.scrollHeight);
+            n.forEach((el, i) => { 
+                if(i === 0){ const b = el.offsetTop; const l = el.offsetLeft; const w = el.offsetWidth; const h = el.offsetHeight; p += `M ${l + w / 2} ${b + h / 2} `; } 
+                else { const prev = n[i - 1].getBoundingClientRect(), curr = el.getBoundingClientRect(); const x1 = prev.offsetLeft + prev.offsetWidth / 2, y1 = prev.top + prev.height / 2 - r.top, x2 = curr.left + curr.width / 2 - r.left, y2 = curr.top + curr.height / 2 - r.top; p += `C ${x1} ${y1 + (y2 - y1) / 2}, ${x2} ${y1 + (y2 - y1) / 2}, ${x2} ${y2} `; } 
+            });
+            const l1 = document.createElementNS("http://www.w3.org/2000/svg", "path"); l1.setAttribute("d", p); l1.setAttribute("stroke", "#334155"); l1.setAttribute("stroke-width", "4"); l1.setAttribute("fill", "none"); s.appendChild(l1);
+        }
+
+        // --- INITIALIZATION & EVENTS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Build Main Neck
+            (function(){ 
+                const n = document.createElement('div'); n.className = 'fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
+                for(let i = 0; i < NUM_STRINGS; i++){ 
+                    const s = document.createElement('div'); s.className = 'string-container relative flex items-center h-8 md:h-9'; s.dataset.stringId = i; 
+                    const l = document.createElement('div'); l.className = 'string absolute left-0 right-0 z-10 rounded-full'; l.style.height = `${((NUM_STRINGS - 1 - i) * 0.5) + 1}px`; s.appendChild(l); 
+                    for(let j = 0; j < NUM_FRETS + 1; j++){ 
+                        const fw = document.createElement('div'); fw.className = 'fret-wrapper relative w-[40px] md:w-[50px] h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; 
+                        if(j === 0){ const nut = document.createElement('div'); nut.className = 'fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut); } 
+                        else { const fl = document.createElement('div'); fl.className = 'fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl); } 
+                        const a = document.createElement('div'); a.className = 'absolute inset-0 z-20 cursor-pointer'; a.dataset.string = i; a.dataset.fret = j; a.onclick = () => handleFinderClick(i, j); 
+                        fw.appendChild(a); s.appendChild(fw); 
+                    } n.appendChild(s); 
+                } 
+                el('guitar-neck').innerHTML = ''; el('guitar-neck').appendChild(n); 
+                [3, 5, 7, 9, 15].forEach(f => { const c = n.children[2].children[f + 1]; if(c) c.insertBefore(Object.assign(document.createElement('div'), {className: 'absolute w-3 h-3 rounded-full bg-black/40 z-0'}), c.firstChild); }); 
+                const cG = n.children[3].children[13], cD = n.children[2].children[13]; if(cG && cD) [cG, cD].forEach(c => c.insertBefore(Object.assign(document.createElement('div'), {className: 'absolute w-3 h-3 rounded-full bg-black/40 z-0'}), c.firstChild)); 
+            })();
+
+            // Listeners
+            safeListener('user-login-select', 'change', () => { el('user-login-btn').disabled = false; el('user-login-btn').classList.remove('opacity-50', 'cursor-not-allowed'); });
+            safeListener('user-login-btn', 'click', () => { const select = el('user-login-select'); const uid = select.value; const pseudo = select.options[select.selectedIndex].dataset.pseudo; if(uid && pseudo) finalizeLogin(pseudo, uid); });
+            safeListener('show-verification-btn', 'click', () => show('verification-modal'));
+            safeListener('cancel-verification', 'click', () => hide('verification-modal'));
+            safeListener('confirm-verification', 'click', () => { hide('verification-modal'); el('new-username-input').value = ''; show('create-profile-modal'); });
+            safeListener('cancel-create-profile', 'click', () => hide('create-profile-modal'));
+            safeListener('confirm-create-profile', 'click', async () => { const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
+            safeListener('toggle-sidebar-btn', 'click', () => { const s = el('app-sidebar'); if(window.innerWidth < 1024) { s.style.display = s.style.display === 'block' ? 'none' : 'block'; } });
+            safeListener('fullscreen-btn', 'click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else if (document.exitFullscreen) document.exitFullscreen(); });
+            safeListener('admin-access-btn', 'click', () => { show('pin-modal'); el('pin-input').value = ''; });
+            safeListener('validate-pin-btn', 'click', async () => { if(btoa(el('pin-input').value) === ADMIN_SECRET) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value = ''; } });
+            safeListener('cancel-pin-btn', 'click', () => hide('pin-modal')); 
+            safeListener('close-admin-btn', 'click', () => hide('admin-modal'));
+            safeListener('logout-btn', 'click', () => { currentUserPseudo = ''; show('login-screen'); hide('main-menu'); });
+            
+            // Stats Tabs
+            document.querySelectorAll('.stat-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.stat-tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentStatsTab = e.target.dataset.tab;
+                    updateStatsView();
+                });
+            });
+
+            // Admin Logic
+            safeListener('tab-users-btn', 'click', () => switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', () => switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', () => switchAdminTab('errors'));
+            safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
+            safeListener('cancel-delete-btn', 'click', () => hide('confirm-delete-modal'));
+            safeListener('confirm-delete-btn', 'click', async () => { if(itemToDelete){ try{ let col = 'scores'; if(itemToDelete.t === 'user') col = 'users'; else if(itemToDelete.t === 'event') col = 'pedago_events'; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', col, itemToDelete.id)); } catch(e){ alert(e); } hide('confirm-delete-modal'); if(itemToDelete.t === 'user') renderAdminUsers(); else if(itemToDelete.t === 'event') renderAdminErrors(); else renderAdminSessions(); } });
+
+            // Game Logic Listeners
+            safeListener('start-review-path-btn', 'click', () => { hideAll(); renderPath3D(); show('review-path-menu'); setTimeout(() => { const active = document.querySelector('.path-node-btn.unlocked') || document.querySelector('.path-node-btn.completed:last-of-type'); if(active) active.scrollIntoView({behavior: "smooth", block: "center"}); }, 100); });
+            safeListener('back-to-main-btn-path', 'click', () => { hideAll(); show('main-menu'); });
+            safeListener('back-to-main-btn-chall', 'click', () => { hideAll(); show('main-menu'); });
+            safeListener('back-button', 'click', () => { if(timerInterval) clearInterval(timerInterval); hideAll(); if(currentMode === 'challenge') show('challenge-selection-menu'); else if(currentMode === 'review') { renderPath3D(); show('review-path-menu'); } else show('main-menu'); });
+            safeListener('close-error-btn', 'click', () => hide('error-modal'));
+            safeListener('new-question-btn', 'click', () => { if(!el('new-question-btn').classList.contains('btn-disabled')) { if(currentMode === 'finder') newFinderQuestion(); else { gameInProgress = true; newQ(); } } });
+            safeListener('replay-sound-btn', 'click', playInterval);
+            safeListener('btn-brain-info', 'click', () => show('brain-modal')); safeListener('close-brain-btn', 'click', () => hide('brain-modal'));
+            document.body.addEventListener('click', () => { if(!soundReady) initSound(); }, {once: true});
+            window.addEventListener('resize', () => { if(!el('review-path-menu').classList.contains('hidden')) renderPath3D(); });
+            document.querySelectorAll('.challenge-btn').forEach(b => b.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge)));
+            
+            // Init
+            initAuth();
+        });
+
+        // --- ADMIN FUNCTIONS ---
         function switchAdminTab(t) { 
             hide('admin-users-view'); hide('admin-sessions-view'); hide('admin-errors-view');
             el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
@@ -419,187 +800,9 @@
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
         async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
         async function renderAdminErrors() { const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100))); b.innerHTML=''; s.forEach(doc => { const x = doc.data(); const r=document.createElement('tr'); r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${x.type === 'error' ? 'text-red-400' : 'text-yellow-400'} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td><td class="text-right"><button class="text-red-500 font-bold hover:text-red-300">🗑️</button></td>`; r.querySelector('button').onclick=()=>promptDelete('event', doc.id, `Err ${x.pseudo}`); b.appendChild(r); }); }
-
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
-        safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
-        safeListener('confirm-delete-btn', 'click', async ()=>{ 
-            if(itemToDelete){ 
-                try{ 
-                    let col = 'scores';
-                    if(itemToDelete.t==='user') col='users';
-                    else if(itemToDelete.t==='event') col='pedago_events';
-                    
-                    await deleteDoc(doc(db,'artifacts',appId,'public','data',col,itemToDelete.id)); 
-                }catch(e){alert(e);} 
-                hide('confirm-delete-modal'); 
-                if(itemToDelete.t==='user') renderAdminUsers(); 
-                else if(itemToDelete.t==='event') renderAdminErrors();
-                else renderAdminSessions(); 
-            } 
-        });
 
-        safeListener('logout-btn', 'click', ()=>{ currentUserPseudo=''; show('login-screen'); hide('main-menu'); });
-
-        window.saveScoreToFirebase = async (s, m, t) => { if(!db||!currentUserPseudo)return; try{ await addDoc(collection(db,'artifacts',appId,'public','data','scores'), {pseudo:currentUserPseudo, score:s, total:t, mode:m, timestamp:Date.now()}); if(m.startsWith("Niveau") && s>=30){ const ma = m.match(/Niveau (\d+)/); if(ma) levelProgressMap[parseInt(ma[1])] = (levelProgressMap[parseInt(ma[1])]||0)+1; } }catch(e){} };
-        window.getLevelProgress = () => levelProgressMap;
-        
-        async function logPedagoEvent(type, detail, time, context) {
-            if(!db || !currentUserPseudo) return;
-            try {
-                const eventData = {
-                    pseudo: currentUserPseudo, type: type, detail: detail, time: time.toFixed(1),
-                    timestamp: Date.now(), context: context || null
-                };
-                const ref = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), eventData);
-                allPedagoEvents.push({...eventData, id: ref.id});
-                if(currentStatsTab === 'pedago') updateStatsView();
-            } catch(e) {}
-        }
-        window.logPedagoEvent = logPedagoEvent;
-        
-        function initPedagoFretboard() {
-            const container = el('pedago-neck');
-            if(!container) return;
-            container.innerHTML = ''; 
-            const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
-            n.style.width = "100%"; n.style.height = "100%";
-            const NUM_STRINGS=6, NUM_FRETS=15;
-            for(let i=0;i<NUM_STRINGS;i++){ 
-                const s=document.createElement('div'); s.className='string-container relative flex items-center h-4'; s.dataset.stringId=i; 
-                const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full pointer-events-none'; l.style.height=`${((NUM_STRINGS-1-i)*0.3)+1}px`; s.appendChild(l); 
-                for(let j=0;j<NUM_FRETS+1;j++){ 
-                    const fw=document.createElement('div'); fw.className='fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent flex-shrink-0'; 
-                    if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20 pointer-events-none'; fw.appendChild(nut);} 
-                    else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10 pointer-events-none'; fw.appendChild(fl);} 
-                    const a=document.createElement('div'); a.className='absolute inset-0 z-50 cursor-pointer hover:bg-white/10'; a.dataset.string=i; a.dataset.fret=j; 
-                    
-                    // INTERACTIVE CLICK
-                    a.onclick = () => {
-                        if(typeof Tone !== 'undefined' && Tone.Transport.state !== 'started') Tone.start();
-                        const synth = new Tone.PolySynth(Tone.AMSynth).toDestination();
-                        synth.volume.value = -5;
-                        const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-                        const TUNING=[40,45,50,55,59,64]; 
-                        const val = TUNING[i] + j;
-                        const note = NOTES_SHARP[val%12] + Math.floor(val/12);
-                        synth.triggerAttackRelease(note, "8n");
-                        
-                        const dot = document.createElement('div');
-                        dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-90 pointer-events-none shadow-lg border border-white';
-                        a.parentElement.appendChild(dot);
-                        setTimeout(() => dot.remove(), 500);
-                    };
-                    fw.appendChild(a); s.appendChild(fw); 
-                } n.appendChild(s); 
-            } 
-            container.appendChild(n);
-            // Markers
-            [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild);}); 
-            const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild));
-        }
-
-        function visualizeErrorOnNeck(context) {
-            const container = el('pedago-neck').querySelector('.fretboard');
-            if(!container) { if(!context) alert("Pas de données visuelles pour cette erreur (ancienne session ?)"); return; }
-            
-            container.querySelectorAll('.note-dot').forEach(d=>d.remove()); // Clear existing
-            if(!context) { alert("Pas de données visuelles pour cette erreur (ancienne session ?)"); return; }
-            
-            const place = (n, color, text) => {
-                if(!n) return;
-                const sIdx = n.string; const fIdx = n.fret;
-                const stringRow = container.children[sIdx]; 
-                if(stringRow) {
-                    const cell = stringRow.children[fIdx+1]; 
-                    if(cell) {
-                        const div=document.createElement('div'); 
-                        div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none border border-white shadow-lg`; 
-                        div.textContent = text || '';
-                        cell.appendChild(div);
-                    }
-                }
-            };
-            
-            if(context.root) place(context.root, 'bg-sky-500', 'F');
-            if(context.target) place(context.target, 'bg-emerald-500', '✓');
-            if(context.clicked) place(context.clicked, 'bg-red-500', '✕');
-            
-            // Blink animation for feedback
-            container.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300 });
-
-            if(context.root) {
-                const scrollX = (context.root.fret * 35) - 80;
-                el('pedago-neck').scrollTo({left:scrollX, behavior:'smooth'});
-            }
-        }
-
-        document.querySelectorAll('.stat-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.stat-tab').forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                currentStatsTab = e.target.dataset.tab;
-                updateStatsView();
-            });
-        });
-
-        function showMainMenu() {
-            el('display-username').textContent = currentUserPseudo; hide('login-screen'); hide('challenge-selection-menu'); hide('app-container'); hide('review-path-menu'); show('main-menu');
-            const maxLvl = Object.keys(levelProgressMap).reduce((a,b)=>Math.max(a, parseInt(b)), 0);
-            el('adventure-progress-text').textContent = `Niveau ${Math.min(maxLvl + 1, 12)} / 12`;
-            
-            // LOGIQUE VERROUILLAGE SQUELETTE & CHALLENGE
-            const skeletonBtn = el('start-finder-btn').parentElement; 
-            const skeletonLock = el('skeleton-lock');
-            const challengeBtn = el('open-challenge-btn').parentElement;
-            const challengeLock = el('challenge-lock');
-            
-            const unlocked = (levelProgressMap[12]||0)>=3; // Finished adventure? Or just Level 2?
-            // Wait, prompt said "Squelette 5te Ove est déverrouillé alors que je n'ai pas encore déverrouillé le niveau 3".
-            // So Skeleton unlocks at Level 3 (meaning Level 2 completed).
-            const skeletonUnlockCondition = (levelProgressMap[2]||0)>=3; 
-            
-            // SKELETON LOCK LOGIC
-            const btnS = el('start-finder-btn');
-            if(skeletonUnlockCondition) {
-                btnS.onclick = startFinderMode;
-                skeletonLock.classList.add('hidden');
-                btnS.classList.remove('opacity-50');
-            } else {
-                btnS.onclick = () => {
-                   skeletonLock.classList.remove('hidden');
-                   skeletonLock.classList.add('shake-anim');
-                   setTimeout(()=>skeletonLock.classList.remove('shake-anim'), 500);
-                };
-                skeletonLock.classList.remove('hidden');
-                btnS.classList.add('opacity-50');
-            }
-
-            // CHALLENGE LOCK LOGIC (Unlock at end of adventure?)
-            const btnC = el('open-challenge-btn');
-            const challengeUnlockCondition = (levelProgressMap[12]||0)>=3;
-            
-            if(challengeUnlockCondition) { 
-                btnC.className = 'w-full h-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-3 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; 
-                btnC.innerHTML = `<div><div class="text-base font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; 
-                btnC.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); };
-                challengeLock.classList.add('hidden');
-            } else { 
-                btnC.onclick = () => {
-                   challengeLock.classList.remove('hidden');
-                   challengeLock.classList.add('shake-anim');
-                   setTimeout(()=>challengeLock.classList.remove('shake-anim'), 500);
-                };
-                challengeLock.classList.remove('hidden');
-            }
-            
-            // Init pedago board immediately
-            initPedagoFretboard();
-            updateStatsView();
-        }
-        
-        // Make startFinderMode available to onclick
-        window.startFinderMode = startFinderMode;
-
+        // --- CHARTS & STATS VIEW ---
         function updateStatsView() {
             if(!db) return;
             hide('stats-content-challenges'); hide('stats-content-reflexes'); hide('stats-content-leaderboard'); hide('stats-content-pedago');
@@ -645,17 +848,11 @@
             });
             setChartRef(newChart);
         }
-        
+
         function processPedagoUserView() {
-            const tbody = el('pedago-body');
-            tbody.innerHTML = '';
+            const tbody = el('pedago-body'); tbody.innerHTML = '';
             const userEvents = allPedagoEvents.filter(e => e.pseudo === currentUserPseudo).sort((a,b) => b.timestamp - a.timestamp).slice(0, 50);
-            
-            if(userEvents.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 italic p-2">Aucune difficulté enregistrée.</td></tr>';
-                return;
-            }
-            
+            if(userEvents.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 italic p-2">Aucune difficulté enregistrée.</td></tr>'; return; }
             userEvents.forEach(x => {
                 const tr = document.createElement('tr');
                 tr.className = 'error-row hover:bg-white/5 cursor-pointer transition-colors border-b border-slate-800';
@@ -665,8 +862,6 @@
                 tr.innerHTML=`<td class="${color} font-bold p-2 text-center">${icon}</td><td class="text-slate-300 p-2 truncate max-w-[120px]" title="${x.detail}">${x.detail}</td><td class="font-mono text-right p-2 text-slate-400">${x.time}s</td>`;
                 tbody.appendChild(tr);
             });
-            
-            // Auto-visualize first one
             if(userEvents[0].context) visualizeErrorOnNeck(userEvents[0].context);
         }
 
@@ -679,18 +874,11 @@
                 if(s.mode.includes("Or") && s.score > usersMap[s.pseudo].gold) usersMap[s.pseudo].gold = s.score;
                 if(s.mode.includes("Réflexes") && s.score > usersMap[s.pseudo].reflex) usersMap[s.pseudo].reflex = s.score;
             });
-            
-            const sortedUsers = Object.values(usersMap).map(u => ({
-                ...u,
-                total: u.bronze + u.silver + u.gold + u.reflex
-            })).sort((a,b) => b.total - a.total);
-
-            const tbody = el('leaderboard-body');
-            tbody.innerHTML = '';
+            const sortedUsers = Object.values(usersMap).map(u => ({ ...u, total: u.bronze + u.silver + u.gold + u.reflex })).sort((a,b) => b.total - a.total);
+            const tbody = el('leaderboard-body'); tbody.innerHTML = '';
             sortedUsers.slice(0,20).forEach((u, i) => {
                 const tr = document.createElement('tr');
-                let medal = '';
-                if(i===0) medal='🥇'; else if(i===1) medal='🥈'; else if(i===2) medal='🥉';
+                let medal = ''; if(i===0) medal='🥇'; else if(i===1) medal='🥈'; else if(i===2) medal='🥉';
                 const isMe = u.pseudo === currentUserPseudo ? 'bg-indigo-900/30' : '';
                 tr.className = isMe;
                 tr.innerHTML = `<td class="p-1 border-b border-slate-800">${i+1} ${medal}</td><td class="p-1 border-b border-slate-800 font-bold text-white">${u.pseudo}</td><td class="p-1 border-b border-slate-800 text-right font-mono text-sky-400">${u.total}</td>`;
@@ -698,227 +886,35 @@
             });
         }
 
-        initAuth();
-    </script>
+        function initPedagoFretboard() {
+            const container = el('pedago-neck'); if(!container) return; container.innerHTML = ''; 
+            const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
+            n.style.width = "100%"; n.style.height = "100%";
+            for(let i=0;i<NUM_STRINGS;i++){ 
+                const s=document.createElement('div'); s.className='string-container relative flex items-center h-4'; s.dataset.stringId=i; 
+                const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full pointer-events-none'; l.style.height=`${((NUM_STRINGS-1-i)*0.3)+1}px`; s.appendChild(l); 
+                for(let j=0;j<NUM_FRETS+1;j++){ 
+                    const fw=document.createElement('div'); fw.className='fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent flex-shrink-0'; 
+                    if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20 pointer-events-none'; fw.appendChild(nut);} 
+                    else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10 pointer-events-none'; fw.appendChild(fl);} 
+                    const a=document.createElement('div'); a.className='absolute inset-0 z-50 cursor-pointer hover:bg-white/10'; a.dataset.string=i; a.dataset.fret=j; 
+                    a.onclick = () => { if(typeof Tone !== 'undefined' && Tone.Transport.state !== 'started') Tone.start(); const synth = new Tone.PolySynth(Tone.AMSynth).toDestination(); synth.volume.value = -5; const val = TUNING[i] + j; const note = NOTES_SHARP[val%12] + Math.floor(val/12); synth.triggerAttackRelease(note, "8n"); const dot = document.createElement('div'); dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-90 pointer-events-none shadow-lg border border-white'; a.parentElement.appendChild(dot); setTimeout(() => dot.remove(), 500); };
+                    fw.appendChild(a); s.appendChild(fw); 
+                } n.appendChild(s); 
+            } 
+            container.appendChild(n);
+            [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild);}); 
+            const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild));
+        }
 
-    <!-- Game Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const NUM_STRINGS=6, NUM_FRETS=15;
-            const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-            const NOTES_FLAT=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
-            const TUNING=[40,45,50,55,59,64]; 
-            const INTERVALS_DATA={'2m':{val:1,desc:"2m"},'2M':{val:2,desc:"2M"},'3m':{val:3,desc:"3m"},'3M':{val:4,desc:"3M"},'4J':{val:5,desc:"4J"},'5dim':{val:6,desc:"5b"},'5J':{val:7,desc:"5J"},'6m':{val:8,desc:"6m"},'6M':{val:9,desc:"6M"},'7m':{val:10,desc:"7m"},'7M':{val:11,desc:"7M"},'8J':{val:12,desc:"8J"}};
-            const INTERVALS={}; Object.keys(INTERVALS_DATA).forEach(k=>INTERVALS[k]=INTERVALS_DATA[k].val);
-            const intervalKeys=Object.keys(INTERVALS);
-            const PATH_LEVELS=[
-                {id:1,title:"Octaves",keys:['8J'],icon:"🎯"}, {id:2,title:"Quintes",keys:['5J'],icon:"🚀"}, {id:3,title:"Piliers",keys:['8J','5J'],icon:"🏛️"},
-                {id:4,title:"Tierce M",keys:['3M'],icon:"☀️"}, {id:5,title:"Tierce m",keys:['3m'],icon:"🌧️"}, {id:6,title:"Émotions",keys:['3M','3m'],icon:"🎭"},
-                {id:7,title:"Triades",keys:['8J','5J','3M','3m'],icon:"🧱"}, {id:8,title:"Secondes",keys:['2M','2m'],icon:"🤏"}, {id:9,title:"Sixtes",keys:['6M','6m'],icon:"🎻"},
-                {id:10,title:"Septièmes",keys:['7M','7m'],icon:"🎷"}, {id:11,title:"Triton",keys:['5dim'],icon:"😈"}, {id:12,title:"Total",keys:[...intervalKeys],icon:"🏆"}
-            ];
-            const CHALLENGES={ bronze:{name:'Bronze',goal:10,lives:3,time:180}, silver:{name:'Argent',goal:20,lives:3,time:180}, gold:{name:'Or',goal:30,lives:3,time:120} };
-            
-            const FINDER_INTERVALS = [
-                { id: '5asc', name: "Quinte Supérieure", val: 7, dir: 1 },
-                { id: '5desc', name: "Quinte Inférieure", val: 5, dir: -1 }, 
-                { id: '8asc', name: "Octave Supérieure", val: 12, dir: 1 },
-                { id: '8desc', name: "Octave Inférieure", val: 12, dir: -1 }
-            ];
-
-            const el=(id)=>document.getElementById(id), show=(id)=>el(id).classList.remove('hidden'), hide=(id)=>el(id).classList.add('hidden');
-            let soundReady=false, synth, gameInProgress=false, currentMode, currentChallenge, score, lives, rootNote, targetNote, correctInterval, activeIntervalKeys, timerInterval, timeLeft;
-            let finderTarget = null; 
-
-            const initSound=async()=>{ if(!soundReady){ try{ await Tone.start(); synth=new Tone.PolySynth(Tone.AMSynth).toDestination(); synth.volume.value=-2; soundReady=true; }catch(e){} } };
-            const playInterval=async()=>{ if(!soundReady)await initSound(); if(rootNote&&targetNote){ const r=getNote(rootNote), t=getNote(targetNote), now=Tone.now(); synth.triggerAttackRelease(r,"8n",now); synth.triggerAttackRelease(t,"8n",now+0.4); } };
-            const getNote=(n)=>{ const t=TUNING[n.string]+n.fret; return NOTES_SHARP[t%12]+Math.floor(t/12); };
-            const getVal=(n)=>(TUNING[n.string]+n.fret)%12;
-            const getAbsPitch=(n)=>TUNING[n.string]+n.fret;
-
-            const hideAll=()=>{ ['login-screen','main-menu','challenge-selection-menu','review-path-menu','app-container'].forEach(id=>hide(id)); };
-            const safeListen=(id,evt,fn)=>{ const e=el(id); if(e)e.addEventListener(evt,fn); };
-
-            if(document.querySelector('[data-action="open-challenge-menu"]')) document.querySelector('[data-action="open-challenge-menu"]').addEventListener('click', ()=>{ hideAll(); show('challenge-selection-menu'); });
-            safeListen('start-review-path-btn', 'click', ()=>{ hideAll(); renderPath3D(); show('review-path-menu'); setTimeout(() => { const active = document.querySelector('.path-node-btn.unlocked') || document.querySelector('.path-node-btn.completed:last-of-type'); if(active) active.scrollIntoView({behavior: "smooth", block: "center"}); }, 100); });
-            safeListen('back-to-main-btn-path', 'click', ()=>{ hideAll(); show('main-menu'); });
-            safeListen('back-to-main-btn-chall', 'click', ()=>{ hideAll(); show('main-menu'); });
-            safeListen('start-finder-btn', 'click', startFinderMode);
-            
-            safeListen('back-button', 'click', ()=>{ if(timerInterval)clearInterval(timerInterval); hideAll(); if(currentMode==='challenge')show('challenge-selection-menu'); else if(currentMode==='review'){renderPath3D();show('review-path-menu');} else show('main-menu'); });
-            safeListen('close-error-btn', 'click', ()=>hide('error-modal'));
-
-            function renderPath3D() {
-                const c=el('path-container'), l=document.createElementNS("http://www.w3.org/2000/svg", "svg"); l.setAttribute("class","path-svg-layer"); c.innerHTML=''; c.appendChild(l);
-                const pm=window.getLevelProgress?window.getLevelProgress():{}; const nd=[];
-                PATH_LEVELS.forEach((lvl,i)=>{
-                    const prevS = i>0?(pm[lvl.id-1]||0):3; const locked=prevS<3; const curS=pm[lvl.id]||0; const comp=curS>=3;
-                    const w=document.createElement('div'); w.className='path-node-wrapper'; w.style.transform=`translateX(${i%2===0?'-25px':'25px'})`;
-                    const n=document.createElement('div'); n.className=`path-node-btn ${locked?'locked':(comp?'completed':'unlocked')}`;
-                    let starH=''; if(!locked) starH=`<div class="stars-container"><span class="${curS>=1?'text-yellow-400':'text-gray-600'} text-[6px]">★</span><span class="${curS>=2?'text-yellow-400':'text-gray-600'} text-[6px]">★</span><span class="${curS>=3?'text-yellow-400':'text-gray-600'} text-[6px]">★</span></div>`;
-                    n.innerHTML=`<span class="text-2xl drop-shadow-md">${locked?'🔒':lvl.icon}</span><div class="absolute -top-4 bg-black/60 px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-wide text-gray-300 whitespace-nowrap border border-slate-700">${lvl.title}</div>${starH}`;
-                    n.onclick=()=>{ if(locked)return; let k=[]; for(let j=0;j<=i;j++)k=[...k,...PATH_LEVELS[j].keys]; startReview(lvl.id, [...new Set(k)], `Niveau ${lvl.id} : ${lvl.title}`); };
-                    w.appendChild(n); c.appendChild(w); nd.push(n);
-                });
-                setTimeout(()=>drawSVG(l,nd,c),50);
-            }
-            function drawSVG(s,n,c){ const r=c.getBoundingClientRect(); let p=""; s.setAttribute("height",c.scrollHeight);
-                n.forEach((el,i)=>{ if(i===0){ const b=el.offsetTop; const l=el.offsetLeft; const w=el.offsetWidth; const h=el.offsetHeight; p+=`M ${l+w/2} ${b+h/2} `; } else { const prev=n[i-1].getBoundingClientRect(), curr=el.getBoundingClientRect(); const x1=prev.offsetLeft+prev.offsetWidth/2, y1=prev.top+prev.height/2-r.top, x2=curr.left+curr.width/2-r.left, y2=curr.top+curr.height/2-r.top; p+=`C ${x1} ${y1+(y2-y1)/2}, ${x2} ${y1+(y2-y1)/2}, ${x2} ${y2} `; } });
-                const l1=document.createElementNS("http://www.w3.org/2000/svg","path"); l1.setAttribute("d",p); l1.setAttribute("stroke","#334155"); l1.setAttribute("stroke-width","4"); l1.setAttribute("fill","none"); s.appendChild(l1);
-            }
-
-            // --- FINDER MODE ---
-            function startFinderMode() {
-                currentMode = 'finder';
-                score = 0; lives = 3;
-                el('app-title').textContent = "Réflexes 5te/8ve";
-                hide('game-ui-bar'); hide('review-lesson-box'); hide('review-progress-bar-container'); hide('answer-buttons'); 
-                show('training-section-controls');
-                el('feedback-message').textContent = ''; el('question-title').textContent = '';
-                show('game-ui-bar'); el('timer-display').parentElement.classList.remove('hidden');
-                updateScore(); updateLives(); startTimer(180); 
-                hideAll(); show('app-container'); gameInProgress = true; newFinderQuestion();
-            }
-
-            const newFinderQuestion = () => {
-                if (!gameInProgress) return;
-                document.querySelectorAll('.note-dot').forEach(n=>n.remove()); 
-                el('feedback-message').innerHTML = '<span class="text-sky-400">Cliquez sur la réponse</span>';
-                el('new-question-btn').classList.add('btn-disabled'); 
-                const task = FINDER_INTERVALS[Math.floor(Math.random() * FINDER_INTERVALS.length)];
-                finderTarget = task;
-                el('question-title').textContent = `Trouvez : ${task.name}`;
-                questionStartTime = Date.now();
-
-                let valid = false, s, f, p1, p2;
-                while(!valid) {
-                    s = Math.floor(Math.random() * NUM_STRINGS); f = Math.floor(Math.random() * 10) + 2;
-                    p1 = TUNING[s] + f; p2 = p1 + (task.val * task.dir);
-                    let possibleTargets = [];
-                    for(let ts=0; ts<NUM_STRINGS; ts++) { let tf = p2 - TUNING[ts]; if (tf >= 0 && tf <= 15) possibleTargets.push({string:ts, fret:tf}); }
-                    if(possibleTargets.length > 0) { valid = true; rootNote = {string:s, fret:f}; }
-                }
-                const rVal=getVal(rootNote);
-                placeNote(rootNote, 'F', {note: (Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]});
-                const n=el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
-            };
-
-            const handleFinderClick = (s, f) => {
-                if(currentMode !== 'finder' || !gameInProgress) return;
-                if(!soundReady) initSound();
-                const timeTaken = (Date.now() - questionStartTime) / 1000;
-                
-                const pRoot = getAbsPitch(rootNote);
-                const pClicked = getAbsPitch({string:s, fret:f});
-                const diff = pClicked - pRoot;
-                const expectedDiff = finderTarget.val * finderTarget.dir;
-                const t = getNote({string:s, fret:f}); synth.triggerAttackRelease(t, "8n");
-                
-                if(diff === expectedDiff) {
-                    placeNote({string:s, fret:f}, 'T'); el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
-                    score++; updateScore();
-                    
-                    if(timeTaken < 10) {
-                        resolvePedagoEvent(finderTarget.name);
-                    } else {
-                         window.logPedagoEvent('slow', `${finderTarget.name} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:{string:s, fret:f}});
-                    }
-
-                    el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
-                } else {
-                    placeNote({string:s, fret:f}, 'X'); el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
-                    window.logPedagoEvent('error', `Cherchait ${finderTarget.name}`, timeTaken, {root:rootNote, clicked:{string:s, fret:f}});
-                    lives--; updateLives(); if(lives <= 0) setTimeout(() => endGame(false), 1000);
-                }
-            };
-
-            const startReview=(id,k,t)=>{ activeIntervalKeys=k; currentMode='review'; score=0; el('app-title').textContent=t; hide('game-ui-bar'); show('training-section-controls'); show('review-lesson-box'); show('review-progress-bar-container'); show('answer-buttons'); updateProg(0); el('lesson-content').innerHTML=k.map(x=>`<span class="bg-indigo-900/50 text-indigo-200 px-1 rounded font-mono font-bold">${x}</span>`).join(' '); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
-            const startChallenge=(k)=>{ currentMode='challenge'; currentChallenge={...CHALLENGES[k],key:k}; activeIntervalKeys=[...intervalKeys]; lives=currentChallenge.lives; score=0; el('app-title').textContent=`Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress=true; newQ(); };
-            
-            const updateProg=(v)=>{ const p=(v/30)*100; el('review-progress-fill').style.width=`${p}%`; if(el('review-progress-text')) el('review-progress-text').textContent=`${v}/30`; };
-            const updateScore=()=>{ if(el('score-display')) el('score-display').textContent=`${score}${currentChallenge ? '/' + currentChallenge.goal : ''}`; };
-            const updateLives=()=>{ if(el('lives-display')) el('lives-display').innerHTML='❤️'.repeat(lives); };
-            const startTimer=(s)=>{ if(timerInterval)clearInterval(timerInterval); timeLeft=s; show('timer-display'); el('timer-display').textContent=s; timerInterval=setInterval(()=>{ timeLeft--; el('timer-display').textContent=timeLeft; if(timeLeft<=0)endGame(false); },1000); };
-
-            const newQ=()=>{ if(!gameInProgress)return; document.querySelectorAll('.note-dot').forEach(n=>n.remove()); el('feedback-message').textContent=''; el('new-question-btn').classList.add('btn-disabled'); el('new-question-btn').classList.remove('btn-highlight');
-                let ret=0; targetNote=null; while(!targetNote&&ret<200){ const s=Math.floor(Math.random()*NUM_STRINGS), f=Math.floor(Math.random()*10)+2; rootNote={string:s,fret:f}; const pt=[]; for(let i=-2;i<=2;i++){ const si=s+i; if(si>=0&&si<NUM_STRINGS) for(let fr=Math.max(0,f-4);fr<=Math.min(NUM_FRETS,f+4);fr++){ if(si===s&&fr===f)continue; let val=(getVal({string:si,fret:fr})-getVal(rootNote)+12)%12; if(val===0)val=12; if(activeIntervalKeys.some(k=>INTERVALS[k]===val)) pt.push({string:si,fret:fr}); } } targetNote=pt.length>0?pt[Math.floor(Math.random()*pt.length)]:null; ret++; }
-                if(!targetNote){newQ();return;}
-                let sem=(getVal(targetNote)-getVal(rootNote)+12)%12; if(sem===0)sem=12; correctInterval=Object.keys(INTERVALS).find(k=>INTERVALS[k]===sem);
-                const rVal=getVal(rootNote); placeNote(rootNote,'F',{note:(Math.random()<0.5?NOTES_SHARP:NOTES_FLAT)[rVal]}); placeNote(targetNote,'T');
-                const n=el('guitar-neck').parentElement; n.scrollTo({left:(rootNote.fret*50)-(n.clientWidth/2), behavior:'smooth'});
-                questionStartTime = Date.now();
-                genChoices(); setTimeout(playInterval,300);
-            };
-
-            const genChoices=()=>{ const p=activeIntervalKeys.filter(k=>k!==correctInterval); let d=p.sort(()=>0.5-Math.random()).slice(0,3); if(d.length<3) d=d.concat(intervalKeys.filter(k=>k!==correctInterval&&!d.includes(k)).slice(0,3-d.length)); const c=[correctInterval,...d].sort(()=>0.5-Math.random()); el('answer-buttons').innerHTML=''; c.forEach(ch=>{ const b=document.createElement('button'); b.textContent=ch; b.className='answer-btn bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold py-3 rounded text-lg shadow w-full'; b.onclick=()=>handle(ch,b); el('answer-buttons').appendChild(b); }); };
-
-            const handle=(sel,btn)=>{ if(!gameInProgress)return; if(!soundReady)initSound(); const ok=sel===correctInterval;
-                if(currentMode==='review'&&!ok){ show('error-modal'); return; }
-                el('answer-buttons').querySelectorAll('button').forEach(b=>{ b.disabled=true; if(b.textContent===correctInterval)b.classList.add('correct'); else if(b===btn&&!ok)b.classList.add('incorrect'); else b.classList.add('opacity-20'); });
-                
-                const timeTaken = (Date.now() - questionStartTime) / 1000;
-
-                if(ok){ 
-                    el('feedback-message').innerHTML=`<span class="text-emerald-400">Bravo !</span>`; score++; 
-                    
-                    if(timeTaken < 10) {
-                        resolvePedagoEvent(sel); 
-                    } else {
-                        window.logPedagoEvent('slow', `Trouver ${correctInterval} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:targetNote});
-                    }
-
-                    if(currentMode==='challenge'){ updateScore(); if(score>=currentChallenge.goal) setTimeout(()=>endGame(true),1000); }
-                    else { updateProg(score); if(score>=30) setTimeout(()=>{ if(window.saveScoreToFirebase)window.saveScoreToFirebase(30,el('app-title').textContent,30); endGame(true); },1000); }
-                } else {
-                    el('feedback-message').innerHTML=`<span class="text-red-400">${correctInterval}</span>`; 
-                    window.logPedagoEvent('error', `Voulait ${correctInterval}, a cliqué ${sel}`, timeTaken, {root:rootNote, target:targetNote}); 
-                    lives--; updateLives(); if(lives<=0) setTimeout(()=>endGame(false),1000);
-                }
-                el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
-            };
-
-            const endGame=(win)=>{ if(timerInterval)clearInterval(timerInterval); gameInProgress=false; el('end-game-buttons').innerHTML='';
-                let modeName = currentMode === 'challenge' ? 'Challenge ' + currentChallenge.name : (currentMode === 'finder' ? 'Réflexes' : 'Aventure');
-                let goalVal = currentMode === 'challenge' ? currentChallenge.goal : 30;
-                if(window.saveScoreToFirebase) window.saveScoreToFirebase(score, modeName, goalVal);
-                el('end-game-title').textContent=win?"VICTOIRE !":"FIN"; el('end-game-title').className=win?'text-2xl font-black text-emerald-500':'text-2xl font-black text-red-500';
-                el('end-game-message').textContent=win?"Validé !":`Score: ${score}`;
-                
-                const replayBtn = document.createElement('button');
-                replayBtn.className = "bg-white text-black hover:bg-gray-200 py-2 rounded font-bold w-full text-xs";
-                replayBtn.textContent = "Rejouer";
-                replayBtn.onclick = () => {
-                    hide('end-game-modal');
-                    if(currentMode === 'challenge') startChallenge(currentChallenge.key);
-                    else if(currentMode === 'finder') startFinderMode();
-                    else { 
-                        hideAll(); renderPath3D(); show('review-path-menu');
-                    }
-                };
-                el('end-game-buttons').appendChild(replayBtn);
-
-                if(win&&currentChallenge?.next) el('end-game-buttons').innerHTML+=`<button class="bg-blue-600 text-white py-1.5 rounded font-bold w-full mb-1 text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); window.startChallenge('${currentChallenge.next}')">Suivant</button>`;
-                el('end-game-buttons').innerHTML+=`<button class="bg-slate-700 text-white py-1.5 rounded w-full text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); location.reload()">Menu</button>`;
-                show('end-game-modal');
-            };
-            window.startChallenge = (k) => { currentMode = 'challenge'; currentChallenge = { ...CHALLENGES[k], key: k }; activeIntervalKeys = [...intervalKeys]; lives = currentChallenge.lives; score = 0; el('app-title').textContent = `Challenge ${currentChallenge.name}`; show('game-ui-bar'); hide('review-progress-bar-container'); show('training-section-controls'); hide('review-lesson-box'); show('answer-buttons'); updateScore(); updateLives(); startTimer(currentChallenge.time); hideAll(); show('app-container'); gameInProgress = true; newQ(); };
-            function placeNote(n,t,d={}){ 
-                const w=el('guitar-neck').querySelector(`[data-string='${n.string}'][data-fret='${n.fret}']`)?.parentElement; if(!w)return; 
-                if(currentMode !== 'finder' || t === 'F') w.querySelector('.note-dot')?.remove();
-                const div=document.createElement('div'); 
-                let bg = 'bg-sky-500'; if(t === 'T') bg = 'bg-indigo-500'; if(t === 'X') bg = 'bg-red-500'; if(currentMode === 'finder' && t === 'T') bg = 'bg-green-500'; 
-                div.className=`note-dot note-pop w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-bold text-xs ${bg} text-white`; 
-                div.textContent=t==='F'?d.note:(t==='T'?'':(t==='X'?'✕':'')); 
-                w.appendChild(div); 
-            }
-            safeListen('new-question-btn', 'click', ()=>{ if(!el('new-question-btn').classList.contains('btn-disabled')){ if(currentMode==='finder') newFinderQuestion(); else {gameInProgress=true;newQ();} } });
-            safeListen('replay-sound-btn', 'click', playInterval);
-            safeListen('btn-brain-info', 'click', ()=>show('brain-modal')); safeListen('close-brain-btn', 'click', ()=>hide('brain-modal'));
-            document.body.addEventListener('click', ()=>{if(!soundReady)initSound();}, {once:true});
-            window.addEventListener('resize', ()=>{if(!el('review-path-menu').classList.contains('hidden'))renderPath3D();});
-            document.querySelectorAll('.challenge-btn').forEach(b => b.addEventListener('click', (e) => startChallenge(e.currentTarget.dataset.challenge)));
-            (function(){ const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; for(let i=0;i<NUM_STRINGS;i++){ const s=document.createElement('div'); s.className='string-container relative flex items-center h-8 md:h-9'; s.dataset.stringId=i; const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.5)+1}px`; s.appendChild(l); for(let j=0;j<NUM_FRETS+1;j++){ const fw=document.createElement('div'); fw.className='fret-wrapper relative w-[40px] md:w-[50px] h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} const a=document.createElement('div'); a.className='absolute inset-0 z-20 cursor-pointer'; a.dataset.string=i; a.dataset.fret=j; a.onclick = () => handleFinderClick(i, j); fw.appendChild(a); s.appendChild(fw); } n.appendChild(s); } el('guitar-neck').innerHTML=''; el('guitar-neck').appendChild(n); [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild);}); const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-3 h-3 rounded-full bg-black/40 z-0'}),c.firstChild)); })();
-        });
+        function visualizeErrorOnNeck(context) {
+            const container = el('pedago-neck').querySelector('.fretboard'); if(!container || !context) return;
+            container.querySelectorAll('.note-dot').forEach(d=>d.remove()); 
+            const place = (n, color, text) => { if(!n) return; const sIdx = n.string; const fIdx = n.fret; const stringRow = container.children[sIdx]; if(stringRow) { const cell = stringRow.children[fIdx+1]; if(cell) { const div=document.createElement('div'); div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none border border-white shadow-lg`; div.textContent = text || ''; cell.appendChild(div); } } };
+            if(context.root) place(context.root, 'bg-sky-500', 'F'); if(context.target) place(context.target, 'bg-emerald-500', '✓'); if(context.clicked) place(context.clicked, 'bg-red-500', '✕');
+            container.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300 });
+            if(context.root) { const scrollX = (context.root.fret * 35) - 80; el('pedago-neck').scrollTo({left:scrollX, behavior:'smooth'}); }
+        }
     </script>
 </body>
 </html>
