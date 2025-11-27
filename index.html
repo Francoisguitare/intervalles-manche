@@ -21,6 +21,7 @@
         /* Sidebar */
         .sidebar-glass { background: rgba(2, 6, 23, 0.6); border-left: 1px solid rgba(255, 255, 255, 0.03); }
         .feed-item { font-size: 10px; color: #9ca3af; padding: 1px 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; line-height: 1.4; }
+        .feed-item:hover { color: #e5e7eb; }
         
         /* Main Content */
         .main-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 1rem; overflow-y: auto; position: relative; }
@@ -45,13 +46,10 @@
         .btn-highlight { animation: pulse-blue 2s infinite; }
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); } 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); } }
         
-        /* Fretboard */
         .fretboard { background: #271c19; border: 3px solid #15100e; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); border-radius: 4px; }
         .fret-line { background-color: #9ca3af; width: 2px !important; }
         .fret-nut { background-color: #e5e5e5; }
         .string { background: #9ca3af; box-shadow: 0 1px 1px rgba(0,0,0,0.5); }
-        .clickable-area { cursor: pointer; z-index: 50; } /* High Z-Index for clicks */
-        .clickable-area:hover { background-color: rgba(255, 255, 255, 0.1); }
         
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -68,13 +66,16 @@
         
         .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
+        
+        .clickable-fret:hover { background-color: rgba(255,255,255,0.15); cursor: pointer; }
 
-        /* Tabs */
+        /* Tabs for Stats */
         .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
         
         .error-row { cursor: pointer; transition: background-color 0.2s; }
         .error-row:hover { background-color: rgba(255,255,255,0.05); }
+        .error-row:active { background-color: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -106,13 +107,13 @@
             <!-- DASHBOARD -->
             <div id="main-menu" class="hidden w-full max-w-5xl flex flex-col animate-fade-in p-2 h-full">
                 
-                <!-- TOP WORKSPACE: Interactive Neck (No border) -->
-                <div class="w-full mb-2 flex flex-col shrink-0">
+                <!-- TOP WORKSPACE: Interactive Neck -->
+                <div class="w-full mb-4 flex flex-col shrink-0">
                     <div class="flex justify-between items-center mb-1 px-1">
                          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Zone de Travail (Cliquez pour jouer)</h3>
                     </div>
-                    <!-- Scaled down to fit without scrolling -->
-                    <div id="pedago-neck" class="relative w-full h-20 overflow-x-auto custom-scroll flex items-center px-2"></div>
+                    <!-- No borders, purely interactive -->
+                    <div id="pedago-neck" class="relative w-full h-24 bg-black/20 rounded-lg overflow-x-auto custom-scroll flex items-center px-2"></div>
                 </div>
 
                 <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
@@ -144,7 +145,7 @@
                         </div>
                     </div>
 
-                    <!-- Stats Panel with Tabs -->
+                    <!-- Stats Panel -->
                     <div class="w-full md:w-1/2 glass-panel p-4 rounded-xl shadow-xl flex flex-col overflow-hidden h-full">
                         <div class="flex border-b border-slate-700 mb-2 shrink-0">
                             <div class="stat-tab active" data-tab="challenges">CHALLENGES</div>
@@ -164,8 +165,8 @@
                         </div>
 
                         <div id="stats-content-pedago" class="flex-1 w-full min-h-0 flex flex-col hidden">
-                            <p class="text-[9px] text-slate-500 mb-2 italic">Cliquez sur une erreur pour l'afficher sur le manche du haut.</p>
-                            <div class="flex-1 overflow-y-auto custom-scroll">
+                            <p class="text-[9px] text-slate-500 mb-2 italic text-center">Cliquez sur une ligne pour l'analyser en haut ↑</p>
+                            <div class="flex-1 overflow-y-auto custom-scroll bg-black/20 rounded p-1">
                                 <table class="w-full text-[10px]">
                                     <thead class="text-slate-500 border-b border-slate-700 sticky top-0 bg-slate-900/90"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Tps</th></tr></thead>
                                     <tbody id="pedago-body" class="text-slate-300"></tbody>
@@ -413,20 +414,21 @@
         
         function initPedagoFretboard() {
             const container = el('pedago-neck');
-            if(!container || container.children.length > 0) return;
+            if(!container) return;
+            container.innerHTML = ''; // FORCE CLEAR REBUILD
             const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
-            // Remove scaling, use responsive sizing or fit to container
-            n.style.width = "100%"; 
+            n.style.width = "100%"; n.style.height = "100%";
             const NUM_STRINGS=6, NUM_FRETS=15;
             for(let i=0;i<NUM_STRINGS;i++){ 
-                const s=document.createElement('div'); s.className='string-container relative flex items-center h-4'; s.dataset.stringId=i; // Reduced height
-                const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.3)+1}px`; s.appendChild(l); 
+                const s=document.createElement('div'); s.className='string-container relative flex items-center h-4'; s.dataset.stringId=i; 
+                const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full pointer-events-none'; l.style.height=`${((NUM_STRINGS-1-i)*0.3)+1}px`; s.appendChild(l); 
                 for(let j=0;j<NUM_FRETS+1;j++){ 
-                    const fw=document.createElement('div'); fw.className='fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; 
-                    if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} 
-                    else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} 
-                    const a=document.createElement('div'); a.className='absolute inset-0 z-50 clickable-area'; a.dataset.string=i; a.dataset.fret=j; 
-                    // Interactive Click on visualization neck
+                    const fw=document.createElement('div'); fw.className='fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent flex-shrink-0'; 
+                    if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20 pointer-events-none'; fw.appendChild(nut);} 
+                    else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10 pointer-events-none'; fw.appendChild(fl);} 
+                    const a=document.createElement('div'); a.className='absolute inset-0 z-50 cursor-pointer hover:bg-white/10'; a.dataset.string=i; a.dataset.fret=j; 
+                    
+                    // INTERACTIVE CLICK
                     a.onclick = () => {
                         if(typeof Tone !== 'undefined' && Tone.Transport.state !== 'started') Tone.start();
                         const synth = new Tone.PolySynth(Tone.AMSynth).toDestination();
@@ -437,8 +439,9 @@
                         const note = NOTES_SHARP[val%12] + Math.floor(val/12);
                         synth.triggerAttackRelease(note, "8n");
                         
+                        // Flash dot
                         const dot = document.createElement('div');
-                        dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-80 pointer-events-none';
+                        dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-90 pointer-events-none shadow-lg border border-white';
                         a.parentElement.appendChild(dot);
                         setTimeout(() => dot.remove(), 500);
                     };
@@ -447,14 +450,16 @@
             } 
             container.appendChild(n);
             // Markers
-            [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0'}),c.firstChild);}); 
-            const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0'}),c.firstChild));
+            [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild);}); 
+            const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0 pointer-events-none'}),c.firstChild));
         }
 
         function visualizeErrorOnNeck(context) {
             const container = el('pedago-neck').querySelector('.fretboard');
-            if(!container || !context) return;
-            container.querySelectorAll('.note-dot').forEach(d=>d.remove());
+            if(!container) { if(!context) alert("Pas de données visuelles pour cette erreur (ancienne session ?)"); return; }
+            
+            container.querySelectorAll('.note-dot').forEach(d=>d.remove()); // Clear existing
+            if(!context) { alert("Pas de données visuelles pour cette erreur (ancienne session ?)"); return; }
             
             const place = (n, color) => {
                 if(!n) return;
@@ -464,7 +469,7 @@
                     const cell = stringRow.children[fIdx+1]; 
                     if(cell) {
                         const div=document.createElement('div'); 
-                        div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none`; 
+                        div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none border border-white shadow-lg`; 
                         cell.appendChild(div);
                     }
                 }
@@ -474,8 +479,11 @@
             if(context.target) place(context.target, 'bg-emerald-500');
             if(context.clicked) place(context.clicked, 'bg-red-500');
             
+            // Blink animation for feedback
+            container.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300 });
+
             if(context.root) {
-                const scrollX = (context.root.fret * 40) - 100;
+                const scrollX = (context.root.fret * 35) - 80;
                 el('pedago-neck').scrollTo({left:scrollX, behavior:'smooth'});
             }
         }
@@ -561,11 +569,11 @@
             
             userEvents.forEach(x => {
                 const tr = document.createElement('tr');
-                tr.className = 'error-row hover:bg-white/5 cursor-pointer transition-colors';
+                tr.className = 'error-row hover:bg-white/5 cursor-pointer transition-colors border-b border-slate-800';
                 tr.onclick = () => visualizeErrorOnNeck(x.context);
                 const color = x.type === 'error' ? 'text-red-400' : 'text-yellow-400';
                 const icon = x.type === 'error' ? '❌' : '🐢';
-                tr.innerHTML=`<td class="${color} font-bold p-1 border-b border-slate-800">${icon}</td><td class="text-slate-300 p-1 border-b border-slate-800 truncate max-w-[100px]" title="${x.detail}">${x.detail}</td><td class="font-mono text-right p-1 border-b border-slate-800">${x.time}s</td>`;
+                tr.innerHTML=`<td class="${color} font-bold p-2 text-center">${icon}</td><td class="text-slate-300 p-2 truncate max-w-[120px]" title="${x.detail}">${x.detail}</td><td class="font-mono text-right p-2 text-slate-400">${x.time}s</td>`;
                 tbody.appendChild(tr);
             });
             
