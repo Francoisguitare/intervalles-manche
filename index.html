@@ -50,6 +50,8 @@
         .fret-line { background-color: #9ca3af; width: 2px !important; }
         .fret-nut { background-color: #e5e5e5; }
         .string { background: #9ca3af; box-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        .clickable-area { cursor: pointer; z-index: 50; }
+        .clickable-area:hover { background-color: rgba(255, 255, 255, 0.1); }
         
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -59,6 +61,9 @@
         .admin-crown:hover { opacity: 1; }
         @media (min-width: 1024px) { .admin-crown { right: 200px; } }
 
+        #fullscreen-btn { position: fixed; top: 10px; left: 10px; z-index: 10000; font-size: 1.2rem; cursor: pointer; background: rgba(30, 41, 59, 0.8); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid #475569; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: background 0.2s; }
+        #fullscreen-btn:hover { background: rgba(51, 65, 85, 1); }
+
         .answer-btn { position: relative; border-bottom: 3px solid rgba(0,0,0,0.3); transition: all 0.1s; }
         .answer-btn:active { border-bottom-width: 0; transform: translateY(3px); }
         .answer-btn.correct { background: #059669 !important; color: white; border-color: #064e3b !important; }
@@ -67,23 +72,19 @@
         .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
         
-        .clickable-fret:hover { background-color: rgba(255,255,255,0.15); cursor: pointer; }
-
-        /* Tabs for Stats */
-        .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
-        .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
-        
         .error-row { cursor: pointer; transition: background-color 0.2s; }
         .error-row:hover { background-color: rgba(255,255,255,0.05); }
         .error-row:active { background-color: rgba(255,255,255,0.1); }
 
-        /* Admin Checkbox */
-        .admin-checkbox { accent-color: #ef4444; cursor: pointer; }
+        /* Stats Tabs */
+        .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
 
     <div id="admin-access-btn" class="admin-crown" title="Accès Admin">👑</div>
+    <button id="fullscreen-btn" title="Plein Écran">⛶</button>
 
     <div class="app-layout">
         <!-- CENTER CONTENT -->
@@ -115,8 +116,13 @@
                     <div class="flex justify-between items-center mb-1 px-1">
                          <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Zone de Travail (Cliquez pour jouer)</h3>
                     </div>
-                    <!-- No borders, purely interactive -->
                     <div id="pedago-neck" class="relative w-full h-24 bg-black/20 rounded-lg overflow-x-auto custom-scroll flex items-center px-2"></div>
+                    <!-- LEGEND -->
+                    <div class="flex gap-4 justify-center mt-1 text-[9px] text-slate-400">
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-sky-500"></div> Fondamentale (F)</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Cible (✓)</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500"></div> Erreur (✕)</span>
+                    </div>
                 </div>
 
                 <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
@@ -132,15 +138,31 @@
                             <span class="text-3xl filter drop-shadow-lg">🗺️</span>
                         </button>
 
-                        <button id="start-finder-btn" class="group w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all shrink-0">
-                            <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
-                            <span class="text-3xl">⚡</span>
-                        </button>
+                        <!-- SQUELETTE BUTTON -->
+                        <div id="skeleton-btn-wrapper" class="flex-1 relative shrink-0">
+                            <button id="start-finder-btn" class="w-full h-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all">
+                                <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
+                                <span class="text-3xl">⚡</span>
+                            </button>
+                             <!-- Lock Overlay -->
+                            <div id="skeleton-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center hidden z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
+                                <span class="text-3xl mb-1">🔒</span>
+                                <span class="text-[9px] text-gray-300">Niveau 3 requis</span>
+                            </div>
+                        </div>
 
-                        <button id="open-challenge-btn" class="group w-full bg-slate-800 text-slate-500 p-4 rounded-xl border border-slate-700 cursor-not-allowed relative overflow-hidden text-left flex justify-between items-center shrink-0">
-                            <div><div class="text-lg font-bold flex items-center gap-2">CHALLENGE <span class="text-[8px] bg-slate-700 px-1 rounded">Verrouillé</span></div><div class="text-[9px] mt-1">Finir l'Aventure</div></div>
-                            <span class="text-2xl opacity-30">🔒</span>
-                        </button>
+                        <!-- CHALLENGE BUTTON -->
+                        <div id="challenge-btn-wrapper" class="flex-1 relative shrink-0">
+                            <button id="open-challenge-btn" class="w-full h-full bg-slate-800 text-slate-200 p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center">
+                                <div><div class="text-lg font-bold flex items-center gap-2">CHALLENGE</div><div class="text-[9px] mt-1">Testez vos limites</div></div>
+                                <span class="text-2xl opacity-30">🏆</span>
+                            </button>
+                            <!-- Lock Overlay -->
+                            <div id="challenge-lock" class="absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center hidden z-20 cursor-not-allowed backdrop-blur-[2px] border border-slate-600">
+                                <span class="text-3xl mb-1">🔒</span>
+                                <span class="text-[9px] text-gray-300">Terminez l'Aventure</span>
+                            </div>
+                        </div>
                         
                         <div class="flex justify-between items-center px-1 mt-auto pb-2">
                             <button id="btn-brain-info" class="text-[9px] text-indigo-400 hover:text-indigo-300">🧠 Neuro-Pédagogie</button>
@@ -168,7 +190,7 @@
                         </div>
 
                         <div id="stats-content-pedago" class="flex-1 w-full min-h-0 flex flex-col hidden">
-                            <p class="text-[9px] text-slate-500 mb-2 italic text-center">Cliquez sur une erreur pour l'afficher sur le manche du haut.</p>
+                            <p class="text-[9px] text-slate-500 mb-2 italic text-center">Cliquez sur une ligne pour la voir sur le manche.</p>
                             <div class="flex-1 overflow-y-auto custom-scroll bg-black/20 rounded p-1">
                                 <table class="w-full text-[10px]">
                                     <thead class="text-slate-500 border-b border-slate-700 sticky top-0 bg-slate-900/90"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Tps</th></tr></thead>
@@ -273,53 +295,7 @@
     <div id="create-profile-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[70]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-slate-700"><h2 class="text-sm font-bold text-white mb-4">Nouveau Profil</h2><input type="text" id="new-username-input" class="w-full bg-black/50 text-white p-2 rounded border border-slate-600 text-xs mb-4" placeholder="Prénom"><div class="grid grid-cols-2 gap-2"><button id="cancel-create-profile" class="bg-slate-800 text-slate-300 py-1 rounded text-xs">Annuler</button><button id="confirm-create-profile" class="bg-sky-600 text-white py-1 rounded text-xs font-bold">Créer</button></div></div></div>
     <div id="error-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[80]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-red-900/50"><div class="text-4xl mb-2">👀</div><h2 class="text-sm font-bold text-white">Regarde bien !</h2><p class="text-slate-400 text-[10px] mb-4">Compte les cases...</p><button id="close-error-btn" class="w-full bg-white text-black py-1.5 rounded text-xs font-bold">OK</button></div></div>
     <div id="pin-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"><div class="glass-panel rounded-xl p-6 w-64 text-center border border-yellow-900/30"><h2 class="text-xs font-bold text-white mb-4">Admin PIN</h2><input type="password" id="pin-input" class="w-full bg-black/50 text-white text-center p-2 rounded border border-slate-600 mb-4" placeholder="••••"><div class="grid grid-cols-2 gap-2"><button id="cancel-pin-btn" class="bg-slate-800 text-white py-1 rounded text-xs">Annuler</button><button id="validate-pin-btn" class="bg-yellow-700 text-black py-1 rounded text-xs font-bold">Go</button></div></div></div>
-    
-    <!-- ADMIN MODAL UPDATED WITH SELECT & BULK DELETE -->
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4">
-        <div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700">
-            <div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div>
-            <div class="flex border-b border-slate-700">
-                <button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button>
-                <button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button>
-                <button id="tab-errors-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Suivi Pédago</button>
-            </div>
-            <div class="flex-1 overflow-hidden relative">
-                <div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div>
-                <div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4">
-                    <button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button>
-                    <div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div>
-                </div>
-                <!-- Pedago View Updated -->
-                <div id="admin-errors-view" class="hidden absolute inset-0 flex flex-col p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <select id="admin-pedago-user-select" class="bg-slate-800 text-white text-[10px] p-1 rounded border border-slate-600">
-                            <option value="">Choisir un élève...</option>
-                        </select>
-                        <div id="admin-pedago-actions" class="hidden">
-                            <button id="delete-selected-pedago-btn" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">Supprimer sélection</button>
-                        </div>
-                    </div>
-                    <div class="flex-1 overflow-auto border border-slate-800 rounded">
-                        <table class="admin-table w-full">
-                            <thead>
-                                <tr>
-                                    <th class="w-8"><input type="checkbox" id="admin-pedago-check-all" class="admin-checkbox"></th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Détail</th>
-                                    <th>Tps</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-errors-tbody">
-                                <tr><td colspan="5" class="text-center text-slate-500 p-4">Sélectionnez un élève pour voir ses difficultés.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[50] p-4"><div class="glass-panel rounded-xl w-full max-w-3xl h-[80vh] flex flex-col border border-slate-700"><div class="flex justify-between p-3 border-b border-slate-700"><h2 class="text-sm font-bold text-white">Admin</h2><button id="close-admin-btn" class="text-white text-xs">✕</button></div><div class="flex border-b border-slate-700"><button id="tab-users-btn" class="flex-1 py-2 text-[10px] font-bold text-white border-b border-sky-500">Membres</button><button id="tab-sessions-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Historique</button><button id="tab-errors-btn" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Suivi Pédago</button></div><div class="flex-1 overflow-hidden relative"><div id="admin-users-view" class="absolute inset-0 overflow-y-auto p-4"><div id="admin-users-list" class="space-y-1"></div></div><div id="admin-sessions-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-sessions-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>Date</th><th>J</th><th>Activité</th><th>Sc.</th><th></th></tr></thead><tbody id="admin-sessions-tbody"></tbody></table></div></div><div id="admin-errors-view" class="hidden absolute inset-0 flex flex-col p-4"><button id="refresh-errors-btn" class="mb-2 text-[9px] bg-slate-700 px-2 py-1 rounded text-white self-end">Actualiser</button><div class="flex-1 overflow-auto border border-slate-800 rounded"><table class="admin-table w-full"><thead><tr><th>J</th><th>Type</th><th>Détail</th><th>Tps</th><th></th></tr></thead><tbody id="admin-errors-tbody"></tbody></table></div></div></div></div></div>
     <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[70]"><div class="bg-slate-900 border border-red-900 rounded-xl p-6 w-64 text-center"><h2 class="text-sm font-bold text-white mb-2">Confirmer ?</h2><p id="delete-message" class="text-slate-400 text-[10px] mb-4"></p><div class="flex gap-2"><button id="cancel-delete-btn" class="flex-1 bg-slate-800 text-white py-1 rounded text-xs">Non</button><button id="confirm-delete-btn" class="flex-1 bg-red-800 text-white py-1 rounded text-xs">Oui</button></div></div></div>
     <div id="brain-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 max-w-xs"><h2 class="text-sm font-bold text-white mb-4">Info Cerveau</h2><p class="text-slate-300 text-[10px] mb-4">La répétition espacée renforce la myéline.</p><button id="close-brain-btn" class="bg-indigo-600 text-white py-1.5 w-full rounded text-xs">OK</button></div></div>
     <div id="end-game-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50"><div class="glass-panel rounded-xl p-6 w-64 text-center"><h2 id="end-game-title" class="text-xl font-black mb-2 italic">FIN</h2><div id="end-game-message" class="text-slate-300 mb-4 text-xs"></div><div id="end-game-buttons" class="flex flex-col gap-2"></div></div></div>
@@ -336,7 +312,6 @@
         try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'gia-trainer-v1'; } catch (e) { console.error(e); }
 
         let currentUserPseudo = '', existingUsers = [], progressChart = null, reflexChart = null, itemToDelete = null, levelProgressMap = {}, currentStatsTab = 'challenges', allScoresForLeaderboard = [], allPedagoEvents = [];
-        let selectedAdminUser = null; // For Admin Pedago View
         let questionStartTime = 0;
         const el = (id) => document.getElementById(id);
         const show = (id) => { const e = el(id); if(e) e.classList.remove('hidden'); };
@@ -362,7 +337,7 @@
                 vList.innerHTML = '';
                 existingUsers.forEach(u => { const div = document.createElement('div'); div.textContent = "• " + u.pseudo; div.className = "py-1 border-b border-slate-800 last:border-0"; vList.appendChild(div); });
                 
-                if(!el('admin-modal').classList.contains('hidden')) { renderAdminUsers(); renderAdminUsersForPedago(); } 
+                if(!el('admin-modal').classList.contains('hidden')) renderAdminUsers(); 
             }); 
         }
 
@@ -420,6 +395,10 @@
         }
 
         safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
+        safeListener('fullscreen-btn', 'click', () => {
+             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+             else if (document.exitFullscreen) document.exitFullscreen();
+        });
         window.addEventListener('resize', ()=>{ if(window.innerWidth>=1024) el('app-sidebar').style.display='block'; else el('app-sidebar').style.display='none'; });
 
         // --- ADMIN ---
@@ -427,8 +406,7 @@
         safeListener('admin-access-btn', 'click', ()=>{show('pin-modal'); el('pin-input').value='';});
         safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
         safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
-        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions);
-        
+        safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
         function switchAdminTab(t) { 
             hide('admin-users-view'); hide('admin-sessions-view'); hide('admin-errors-view');
             el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
@@ -436,101 +414,29 @@
             el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
             if(t==='users'){ show('admin-users-view'); el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsers(); } 
             else if(t==='sessions') { show('admin-sessions-view'); el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminSessions(); }
-            else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsersForPedago(); }
+            else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminErrors(); }
         }
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
         async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
-        
-        // Admin Pedago Logic
-        function renderAdminUsersForPedago() {
-            const select = el('admin-pedago-user-select');
-            select.innerHTML = '<option value="">Choisir un élève...</option>';
-            existingUsers.forEach(u => {
-                const opt = document.createElement('option'); opt.value = u.pseudo; opt.textContent = u.pseudo; select.appendChild(opt);
-            });
-        }
-        
-        safeListener('admin-pedago-user-select', 'change', async () => {
-            const pseudo = el('admin-pedago-user-select').value;
-            selectedAdminUser = pseudo;
-            if(pseudo) await fetchPedagoForUser(pseudo);
-            else renderPedagoTable([]);
-        });
-
-        async function fetchPedagoForUser(pseudo) {
-            if(!db) return;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), where("pseudo", "==", pseudo));
-            const snap = await getDocs(q);
-            const events = [];
-            snap.forEach(d => events.push({id:d.id, ...d.data()}));
-            // Sort client side
-            events.sort((a,b) => b.timestamp - a.timestamp);
-            renderPedagoTable(events);
-        }
-
-        function renderPedagoTable(events) {
-            const tbody = el('admin-errors-tbody');
-            tbody.innerHTML = '';
-            el('admin-pedago-actions').classList.add('hidden');
-            
-            if(events.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-500 p-4">Aucune difficulté enregistrée pour cet élève.</td></tr>';
-                return;
-            }
-            
-            events.forEach(ev => {
-                const tr = document.createElement('tr');
-                const dateStr = new Date(ev.timestamp).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
-                const color = ev.type === 'error' ? 'text-red-400' : 'text-yellow-400';
-                tr.innerHTML = `
-                    <td class="text-center"><input type="checkbox" class="admin-checkbox" value="${ev.id}"></td>
-                    <td class="text-slate-500">${dateStr}</td>
-                    <td class="${color} font-bold">${ev.type === 'error' ? 'Err' : 'Lent'}</td>
-                    <td class="text-slate-300 truncate max-w-[100px]" title="${ev.detail}">${ev.detail}</td>
-                    <td class="font-mono">${ev.time}s</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Checkbox listeners
-            const checkboxes = tbody.querySelectorAll('.admin-checkbox');
-            checkboxes.forEach(cb => cb.addEventListener('change', updateBulkDeleteState));
-        }
-
-        safeListener('admin-pedago-check-all', 'change', (e) => {
-            const checkboxes = document.querySelectorAll('#admin-errors-tbody .admin-checkbox');
-            checkboxes.forEach(cb => cb.checked = e.target.checked);
-            updateBulkDeleteState();
-        });
-
-        function updateBulkDeleteState() {
-            const checked = document.querySelectorAll('#admin-errors-tbody .admin-checkbox:checked');
-            const btnDiv = el('admin-pedago-actions');
-            if(checked.length > 0) btnDiv.classList.remove('hidden'); else btnDiv.classList.add('hidden');
-        }
-
-        safeListener('delete-selected-pedago-btn', 'click', async () => {
-            const checked = document.querySelectorAll('#admin-errors-tbody .admin-checkbox:checked');
-            if(checked.length === 0) return;
-            if(!confirm(`Supprimer ces ${checked.length} éléments ?`)) return;
-
-            const batch = writeBatch(db);
-            checked.forEach(cb => {
-                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'pedago_events', cb.value);
-                batch.delete(ref);
-            });
-            
-            try {
-                await batch.commit();
-                // Refresh
-                if(selectedAdminUser) await fetchPedagoForUser(selectedAdminUser);
-            } catch(e) { alert("Erreur suppression"); }
-        });
-
+        async function renderAdminErrors() { const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100))); b.innerHTML=''; s.forEach(doc => { const x = doc.data(); const r=document.createElement('tr'); r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${x.type === 'error' ? 'text-red-400' : 'text-yellow-400'} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td><td class="text-right"><button class="text-red-500 font-bold hover:text-red-300">🗑️</button></td>`; r.querySelector('button').onclick=()=>promptDelete('event', doc.id, `Err ${x.pseudo}`); b.appendChild(r); }); }
 
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
         safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
-        safeListener('confirm-delete-btn', 'click', async ()=>{ if(itemToDelete){ try{ await deleteDoc(doc(db,'artifacts',appId,'public','data',itemToDelete.t==='user'?'users':'scores',itemToDelete.id)); }catch(e){alert(e);} hide('confirm-delete-modal'); if(itemToDelete.t==='user') renderAdminUsers(); else renderAdminSessions(); } });
+        safeListener('confirm-delete-btn', 'click', async ()=>{ 
+            if(itemToDelete){ 
+                try{ 
+                    let col = 'scores';
+                    if(itemToDelete.t==='user') col='users';
+                    else if(itemToDelete.t==='event') col='pedago_events';
+                    
+                    await deleteDoc(doc(db,'artifacts',appId,'public','data',col,itemToDelete.id)); 
+                }catch(e){alert(e);} 
+                hide('confirm-delete-modal'); 
+                if(itemToDelete.t==='user') renderAdminUsers(); 
+                else if(itemToDelete.t==='event') renderAdminErrors();
+                else renderAdminSessions(); 
+            } 
+        });
 
         safeListener('logout-btn', 'click', ()=>{ currentUserPseudo=''; show('login-screen'); hide('main-menu'); });
 
@@ -554,7 +460,7 @@
         function initPedagoFretboard() {
             const container = el('pedago-neck');
             if(!container) return;
-            container.innerHTML = ''; // FORCE CLEAR REBUILD
+            container.innerHTML = ''; 
             const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
             n.style.width = "100%"; n.style.height = "100%";
             const NUM_STRINGS=6, NUM_FRETS=15;
@@ -599,7 +505,7 @@
             container.querySelectorAll('.note-dot').forEach(d=>d.remove()); // Clear existing
             if(!context) { alert("Pas de données visuelles pour cette erreur (ancienne session ?)"); return; }
             
-            const place = (n, color) => {
+            const place = (n, color, text) => {
                 if(!n) return;
                 const sIdx = n.string; const fIdx = n.fret;
                 const stringRow = container.children[sIdx]; 
@@ -608,14 +514,15 @@
                     if(cell) {
                         const div=document.createElement('div'); 
                         div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none border border-white shadow-lg`; 
+                        div.textContent = text || '';
                         cell.appendChild(div);
                     }
                 }
             };
             
-            if(context.root) place(context.root, 'bg-sky-500');
-            if(context.target) place(context.target, 'bg-emerald-500');
-            if(context.clicked) place(context.clicked, 'bg-red-500');
+            if(context.root) place(context.root, 'bg-sky-500', 'F');
+            if(context.target) place(context.target, 'bg-emerald-500', '✓');
+            if(context.clicked) place(context.clicked, 'bg-red-500', '✕');
             
             // Blink animation for feedback
             container.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300 });
@@ -639,15 +546,59 @@
             el('display-username').textContent = currentUserPseudo; hide('login-screen'); hide('challenge-selection-menu'); hide('app-container'); hide('review-path-menu'); show('main-menu');
             const maxLvl = Object.keys(levelProgressMap).reduce((a,b)=>Math.max(a, parseInt(b)), 0);
             el('adventure-progress-text').textContent = `Niveau ${Math.min(maxLvl + 1, 12)} / 12`;
-            const unlocked = (levelProgressMap[12]||0)>=3;
-            const btn = el('open-challenge-btn');
-            if(unlocked) { btn.className = 'flex-1 group w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-4 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; btn.innerHTML = `<div><div class="text-lg font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; btn.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); }; }
-            else { btn.onclick=null; }
+            
+            // LOGIQUE VERROUILLAGE SQUELETTE & CHALLENGE
+            const skeletonBtn = el('start-finder-btn').parentElement; 
+            const skeletonLock = el('skeleton-lock');
+            const challengeBtn = el('open-challenge-btn').parentElement;
+            const challengeLock = el('challenge-lock');
+            
+            const unlocked = (levelProgressMap[12]||0)>=3; // Finished adventure? Or just Level 2?
+            // Wait, prompt said "Squelette 5te Ove est déverrouillé alors que je n'ai pas encore déverrouillé le niveau 3".
+            // So Skeleton unlocks at Level 3 (meaning Level 2 completed).
+            const skeletonUnlockCondition = (levelProgressMap[2]||0)>=3; 
+            
+            // SKELETON LOCK LOGIC
+            const btnS = el('start-finder-btn');
+            if(skeletonUnlockCondition) {
+                btnS.onclick = startFinderMode;
+                skeletonLock.classList.add('hidden');
+                btnS.classList.remove('opacity-50');
+            } else {
+                btnS.onclick = () => {
+                   skeletonLock.classList.remove('hidden');
+                   skeletonLock.classList.add('shake-anim');
+                   setTimeout(()=>skeletonLock.classList.remove('shake-anim'), 500);
+                };
+                skeletonLock.classList.remove('hidden');
+                btnS.classList.add('opacity-50');
+            }
+
+            // CHALLENGE LOCK LOGIC (Unlock at end of adventure?)
+            const btnC = el('open-challenge-btn');
+            const challengeUnlockCondition = (levelProgressMap[12]||0)>=3;
+            
+            if(challengeUnlockCondition) { 
+                btnC.className = 'w-full h-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-3 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; 
+                btnC.innerHTML = `<div><div class="text-base font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; 
+                btnC.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); };
+                challengeLock.classList.add('hidden');
+            } else { 
+                btnC.onclick = () => {
+                   challengeLock.classList.remove('hidden');
+                   challengeLock.classList.add('shake-anim');
+                   setTimeout(()=>challengeLock.classList.remove('shake-anim'), 500);
+                };
+                challengeLock.classList.remove('hidden');
+            }
             
             // Init pedago board immediately
             initPedagoFretboard();
             updateStatsView();
         }
+        
+        // Make startFinderMode available to onclick
+        window.startFinderMode = startFinderMode;
 
         function updateStatsView() {
             if(!db) return;
