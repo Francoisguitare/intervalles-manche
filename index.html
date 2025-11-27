@@ -447,9 +447,11 @@
                 
                 // Show lives/score in a simpler way
                 show('game-ui-bar');
-                el('timer-display').parentElement.classList.add('hidden'); // No timer
+                el('timer-display').parentElement.classList.remove('hidden'); // Show timer
                 updateScore(); updateLives();
                 
+                startTimer(180); // 180s timer
+
                 hideAll(); show('app-container');
                 gameInProgress = true;
                 newFinderQuestion();
@@ -511,9 +513,7 @@
                     el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
                     score++; updateScore();
                     el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
-                    setTimeout(() => {
-                        if(window.saveScoreToFirebase && score % 10 === 0) window.saveScoreToFirebase(score, "Réflexes", null);
-                    }, 100);
+                    // Auto-save milestones? Maybe only at end
                 } else {
                     placeNote({string:s, fret:f}, 'X'); // Red
                     el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
@@ -560,7 +560,12 @@
             };
 
             const endGame=(win)=>{ if(timerInterval)clearInterval(timerInterval); gameInProgress=false; el('end-game-buttons').innerHTML='';
-                if(currentMode==='challenge' && window.saveScoreToFirebase) window.saveScoreToFirebase(score, currentChallenge.name, currentChallenge.goal);
+                // Fix save: use explicit mode name for filter
+                let modeName = currentMode === 'challenge' ? 'Challenge ' + currentChallenge.name : (currentMode === 'finder' ? 'Réflexes' : 'Aventure');
+                let goalVal = currentMode === 'challenge' ? currentChallenge.goal : 30;
+                
+                if(window.saveScoreToFirebase) window.saveScoreToFirebase(score, modeName, goalVal);
+                
                 el('end-game-title').textContent=win?"VICTOIRE !":"FIN"; el('end-game-title').className=win?'text-2xl font-black text-emerald-500':'text-2xl font-black text-red-500';
                 el('end-game-message').textContent=win?"Validé !":`Score: ${score}`;
                 if(win&&currentChallenge?.next) el('end-game-buttons').innerHTML+=`<button class="bg-blue-600 text-white py-1.5 rounded font-bold w-full mb-1 text-xs" onclick="document.getElementById('end-game-modal').classList.add('hidden'); window.startChallenge('${currentChallenge.next}')">Suivant</button>`;
