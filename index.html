@@ -21,7 +21,6 @@
         /* Sidebar */
         .sidebar-glass { background: rgba(2, 6, 23, 0.6); border-left: 1px solid rgba(255, 255, 255, 0.03); }
         .feed-item { font-size: 10px; color: #9ca3af; padding: 1px 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; line-height: 1.4; }
-        .feed-item:hover { color: #e5e7eb; }
         
         /* Main Content */
         .main-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 1rem; overflow-y: auto; position: relative; }
@@ -40,16 +39,19 @@
         /* UI Elements */
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .btn-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
-        .note-dot { transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 30; }
+        .note-dot { transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; pointer-events: none; }
         .note-pop { animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes pop-in { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
         .btn-highlight { animation: pulse-blue 2s infinite; }
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); } 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); } }
         
+        /* Fretboard */
         .fretboard { background: #271c19; border: 3px solid #15100e; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); border-radius: 4px; }
         .fret-line { background-color: #9ca3af; width: 2px !important; }
         .fret-nut { background-color: #e5e5e5; }
         .string { background: #9ca3af; box-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        .clickable-area { cursor: pointer; z-index: 50; } /* High Z-Index for clicks */
+        .clickable-area:hover { background-color: rgba(255, 255, 255, 0.1); }
         
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -66,12 +68,13 @@
         
         .admin-table th { background: rgba(31, 41, 55, 0.8); padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase; color: #9ca3af; border-bottom: 1px solid #374151; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 8px; border-bottom: 1px solid #374151/50; font-size: 11px; color: #e5e7eb; vertical-align: middle; }
-        
-        .clickable-fret:hover { background-color: rgba(255,255,255,0.1); }
 
-        /* Tabs for Stats */
+        /* Tabs */
         .stat-tab { cursor: pointer; padding: 4px 8px; font-size: 10px; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .stat-tab.active { color: white; border-bottom-color: #38bdf8; }
+        
+        .error-row { cursor: pointer; transition: background-color 0.2s; }
+        .error-row:hover { background-color: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body class="bg-gia-gradient text-gray-200 select-none">
@@ -101,67 +104,83 @@
             </div>
 
             <!-- DASHBOARD -->
-            <div id="main-menu" class="hidden w-full max-w-4xl flex flex-col md:flex-row gap-4 items-stretch h-full max-h-[450px] animate-fade-in">
-                <div class="w-full md:w-1/2 flex flex-col gap-3">
-                    <div class="glass-panel p-4 rounded-xl border-l-2 border-sky-500">
-                        <h2 class="text-lg font-bold text-white">Salut <span id="display-username" class="text-sky-400"></span></h2>
-                        <p class="text-slate-400 text-[10px]">Prêt à progresser ?</p>
+            <div id="main-menu" class="hidden w-full max-w-5xl flex flex-col animate-fade-in p-2 h-full">
+                
+                <!-- TOP WORKSPACE: Interactive Neck (No border) -->
+                <div class="w-full mb-2 flex flex-col shrink-0">
+                    <div class="flex justify-between items-center mb-1 px-1">
+                         <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Zone de Travail (Cliquez pour jouer)</h3>
                     </div>
-
-                    <button id="start-review-path-btn" class="flex-1 group w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-500 text-white p-4 rounded-xl shadow-lg border border-white/10 relative overflow-hidden text-left flex justify-between items-center">
-                        <div><div class="text-lg font-black italic">AVENTURE</div><div id="adventure-progress-text" class="text-[9px] bg-black/20 px-2 py-0.5 rounded inline-block mt-1">Chargement...</div></div>
-                        <span class="text-3xl filter drop-shadow-lg">🗺️</span>
-                    </button>
-
-                    <button id="start-finder-btn" class="flex-1 group w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all">
-                        <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
-                        <span class="text-3xl">⚡</span>
-                    </button>
-
-                    <button id="open-challenge-btn" class="flex-1 group w-full bg-slate-800 text-slate-500 p-4 rounded-xl border border-slate-700 cursor-not-allowed relative overflow-hidden text-left flex justify-between items-center">
-                        <div><div class="text-lg font-bold flex items-center gap-2">CHALLENGE <span class="text-[8px] bg-slate-700 px-1 rounded">Verrouillé</span></div><div class="text-[9px] mt-1">Finir l'Aventure</div></div>
-                        <span class="text-2xl opacity-30">🔒</span>
-                    </button>
-                    
-                    <div class="flex justify-between items-center px-1">
-                        <button id="btn-brain-info" class="text-[9px] text-indigo-400 hover:text-indigo-300">🧠 Neuro-Pédagogie</button>
-                        <button id="logout-btn" class="text-[9px] text-red-400 hover:text-red-300">Changer de profil</button>
-                    </div>
+                    <!-- Scaled down to fit without scrolling -->
+                    <div id="pedago-neck" class="relative w-full h-20 overflow-x-auto custom-scroll flex items-center px-2"></div>
                 </div>
 
-                <!-- Stats Panel with Tabs -->
-                <div class="w-full md:w-1/2 glass-panel p-4 rounded-xl shadow-xl flex flex-col">
-                    <div class="flex border-b border-slate-700 mb-2">
-                        <div class="stat-tab active" data-tab="challenges">CHALLENGES</div>
-                        <div class="stat-tab" data-tab="reflexes">RÉFLEXES</div>
-                        <div class="stat-tab" data-tab="pedago">DIFFICULTÉS</div>
-                        <div class="stat-tab" data-tab="leaderboard">CLASSEMENT</div>
-                    </div>
-                    
-                    <div id="stats-content-challenges" class="flex-1 w-full min-h-0 flex flex-col">
-                        <div class="text-[9px] text-slate-400 mb-1 text-right">Objectif: 30pts</div>
-                        <div class="relative flex-1 w-full min-h-0"><canvas id="chart-challenges"></canvas></div>
-                    </div>
-                    
-                    <div id="stats-content-reflexes" class="flex-1 w-full min-h-0 flex flex-col hidden">
-                        <div class="text-[9px] text-slate-400 mb-1 text-right">Rapidité & Précision</div>
-                        <div class="relative flex-1 w-full min-h-0"><canvas id="chart-reflexes"></canvas></div>
+                <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
+                    <!-- Left Column -->
+                    <div class="w-full md:w-1/2 flex flex-col gap-3 shrink-0">
+                        <div class="glass-panel p-4 rounded-xl border-l-2 border-sky-500 shrink-0">
+                            <h2 class="text-lg font-bold text-white">Salut <span id="display-username" class="text-sky-400"></span></h2>
+                            <p class="text-slate-400 text-[10px]">Prêt à progresser ?</p>
+                        </div>
+
+                        <button id="start-review-path-btn" class="group w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-500 text-white p-4 rounded-xl shadow-lg border border-white/10 relative overflow-hidden text-left flex justify-between items-center shrink-0">
+                            <div><div class="text-lg font-black italic">AVENTURE</div><div id="adventure-progress-text" class="text-[9px] bg-black/20 px-2 py-0.5 rounded inline-block mt-1">Chargement...</div></div>
+                            <span class="text-3xl filter drop-shadow-lg">🗺️</span>
+                        </button>
+
+                        <button id="start-finder-btn" class="group w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-xl border border-slate-700 relative overflow-hidden text-left flex justify-between items-center transition-all shrink-0">
+                            <div><div class="text-lg font-black italic text-emerald-400">SQUELETTE 5te/8ve</div><div class="text-[9px] text-slate-400 mt-1">Repérez les piliers</div></div>
+                            <span class="text-3xl">⚡</span>
+                        </button>
+
+                        <button id="open-challenge-btn" class="group w-full bg-slate-800 text-slate-500 p-4 rounded-xl border border-slate-700 cursor-not-allowed relative overflow-hidden text-left flex justify-between items-center shrink-0">
+                            <div><div class="text-lg font-bold flex items-center gap-2">CHALLENGE <span class="text-[8px] bg-slate-700 px-1 rounded">Verrouillé</span></div><div class="text-[9px] mt-1">Finir l'Aventure</div></div>
+                            <span class="text-2xl opacity-30">🔒</span>
+                        </button>
+                        
+                        <div class="flex justify-between items-center px-1 mt-auto pb-2">
+                            <button id="btn-brain-info" class="text-[9px] text-indigo-400 hover:text-indigo-300">🧠 Neuro-Pédagogie</button>
+                            <button id="logout-btn" class="text-[9px] text-red-400 hover:text-red-300">Changer de profil</button>
+                        </div>
                     </div>
 
-                    <div id="stats-content-pedago" class="flex-1 w-full min-h-0 overflow-y-auto custom-scroll hidden">
-                        <table class="w-full text-[10px]">
-                            <thead class="text-slate-500 border-b border-slate-700"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Temps</th></tr></thead>
-                            <tbody id="pedago-body" class="text-slate-300"></tbody>
-                        </table>
+                    <!-- Stats Panel with Tabs -->
+                    <div class="w-full md:w-1/2 glass-panel p-4 rounded-xl shadow-xl flex flex-col overflow-hidden h-full">
+                        <div class="flex border-b border-slate-700 mb-2 shrink-0">
+                            <div class="stat-tab active" data-tab="challenges">CHALLENGES</div>
+                            <div class="stat-tab" data-tab="reflexes">RÉFLEXES</div>
+                            <div class="stat-tab" data-tab="pedago">DIFFICULTÉS</div>
+                            <div class="stat-tab" data-tab="leaderboard">CLASSEMENT</div>
+                        </div>
+                        
+                        <div id="stats-content-challenges" class="flex-1 w-full min-h-0 flex flex-col">
+                            <div class="text-[9px] text-slate-400 mb-1 text-right">Objectif: 30pts</div>
+                            <div class="relative flex-1 w-full min-h-0"><canvas id="chart-challenges"></canvas></div>
+                        </div>
+                        
+                        <div id="stats-content-reflexes" class="flex-1 w-full min-h-0 flex flex-col hidden">
+                            <div class="text-[9px] text-slate-400 mb-1 text-right">Rapidité & Précision</div>
+                            <div class="relative flex-1 w-full min-h-0"><canvas id="chart-reflexes"></canvas></div>
+                        </div>
+
+                        <div id="stats-content-pedago" class="flex-1 w-full min-h-0 flex flex-col hidden">
+                            <p class="text-[9px] text-slate-500 mb-2 italic">Cliquez sur une erreur pour l'afficher sur le manche du haut.</p>
+                            <div class="flex-1 overflow-y-auto custom-scroll">
+                                <table class="w-full text-[10px]">
+                                    <thead class="text-slate-500 border-b border-slate-700 sticky top-0 bg-slate-900/90"><tr><th class="text-left p-1">Type</th><th class="text-left p-1">Détail</th><th class="text-right p-1">Tps</th></tr></thead>
+                                    <tbody id="pedago-body" class="text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div id="stats-content-leaderboard" class="flex-1 w-full min-h-0 overflow-y-auto custom-scroll hidden">
+                             <table class="w-full text-[10px]">
+                                 <thead class="text-slate-500 border-b border-slate-700"><tr><th class="text-left p-1">#</th><th class="text-left p-1">Joueur</th><th class="text-right p-1">Pts Campus</th></tr></thead>
+                                 <tbody id="leaderboard-body" class="text-slate-300"></tbody>
+                             </table>
+                        </div>
+                        <p id="chart-loading" class="text-center text-slate-500 text-[9px] mt-1 hidden">Chargement...</p>
                     </div>
-                    
-                    <div id="stats-content-leaderboard" class="flex-1 w-full min-h-0 overflow-y-auto custom-scroll hidden">
-                         <table class="w-full text-[10px]">
-                             <thead class="text-slate-500 border-b border-slate-700"><tr><th class="text-left p-1">#</th><th class="text-left p-1">Joueur</th><th class="text-right p-1">Pts Campus</th></tr></thead>
-                             <tbody id="leaderboard-body" class="text-slate-300"></tbody>
-                         </table>
-                    </div>
-                    <p id="chart-loading" class="text-center text-slate-500 text-[9px] mt-1 hidden">Chargement...</p>
                 </div>
             </div>
 
@@ -200,14 +219,12 @@
                     <h1 id="app-title" class="text-xs font-black italic text-sky-400 truncate mx-2"></h1>
                     <div class="w-8"></div>
                 </header>
-                <!-- Progress bar only for Adventure Mode -->
                 <div id="review-progress-bar-container" class="hidden w-full bg-slate-800 rounded-full h-3 mb-2 overflow-hidden relative border border-slate-700">
                     <div id="review-progress-fill" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
                     <div class="absolute inset-0 flex items-center justify-center text-[8px] font-bold uppercase tracking-widest text-white drop-shadow-md">
                          Maîtrise <span id="review-progress-text" class="ml-1">0/30</span>
                     </div>
                 </div>
-                <!-- Game Stats -->
                 <div id="game-ui-bar" class="hidden grid grid-cols-3 gap-2 mb-2 bg-slate-900/50 p-1 rounded flex-shrink-0">
                     <div class="text-center"><div class="text-[8px] text-slate-500">SCORE</div><div id="score-display" class="font-mono text-sm text-yellow-400 font-bold">0</div></div>
                     <div class="text-center"><div class="text-[8px] text-slate-500">TEMPS</div><div id="timer-display" class="font-mono text-sm text-sky-400 font-bold">--</div></div>
@@ -237,13 +254,12 @@
         <div id="app-sidebar" class="sidebar-container fixed top-0 right-0 bottom-0 w-[200px] lg:relative lg:w-auto lg:block hidden transform lg:transform-none transition-transform z-40">
             <div class="sidebar-content h-full sidebar-glass border-l border-white/5 flex flex-col">
                 <div class="p-2 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                    <h3 class="text-slate-500 font-bold text-[9px] uppercase">Top 10 Campus</h3>
+                    <h3 class="text-slate-500 font-bold text-[9px] uppercase">Activité Campus</h3>
                     <button id="close-sidebar-mobile" class="lg:hidden text-slate-400 hover:text-white text-xs">✕</button>
                 </div>
                 <div class="flex-1 overflow-y-auto custom-scroll p-0" id="sidebar-feed"></div>
             </div>
         </div>
-        
         <button id="toggle-sidebar-btn" class="fixed top-4 right-4 lg:hidden z-40 bg-slate-800 text-white p-2 rounded shadow border border-slate-600">📡</button>
     </div>
 
@@ -307,33 +323,17 @@
         safeListener('cancel-create-profile', 'click', ()=>hide('create-profile-modal'));
         safeListener('confirm-create-profile', 'click', async ()=>{ const p = el('new-username-input').value.trim(); if(!p) return; try { const r = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'users'), {pseudo:p, createdAt:Date.now()}); hide('create-profile-modal'); finalizeLogin(p, r.id); } catch(e){} });
 
-        async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); await fetchUserPedago(); showMainMenu(); }
+        async function finalizeLogin(n, id) { currentUserPseudo=n; hide('login-screen'); await fetchUserScores(); await fetchUserPedago(); showMainMenu(); initPedagoFretboard(); }
 
-        function listenForActivityFeed() { 
-            if(!db) return; 
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { 
-                const s = []; snap.forEach(d => s.push(d.data())); 
-                allScoresForLeaderboard = s; 
-                renderSidebar(s); 
-                if(currentUserPseudo) updateStatsView(); 
-            }); 
-        }
-        
+        function listenForActivityFeed() { if(!db) return; onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'scores')), (snap) => { const s = []; snap.forEach(d => s.push(d.data())); allScoresForLeaderboard = s; renderSidebar(s); if(currentUserPseudo) updateStatsView(); }); }
         function renderSidebar(s) { 
-            const userTotals = {};
-            s.forEach(x => {
-                if(!userTotals[x.pseudo]) userTotals[x.pseudo] = 0;
-                userTotals[x.pseudo] += x.score;
-            });
-            const leaderboard = Object.entries(userTotals).map(([pseudo, score]) => ({pseudo, score})).sort((a,b) => b.score - a.score);
-
             const c = el('sidebar-feed'); c.innerHTML = ''; 
-            leaderboard.slice(0,10).forEach((x, i) => { 
+            s.slice(0,50).forEach(x => { 
                 const d = document.createElement('div'); d.className = 'feed-item';
-                let icon = '';
-                if(i===0) icon='🥇'; else if(i===1) icon='🥈'; else if(i===2) icon='🥉';
+                let mode = x.mode.replace("Niveau", "Niv").replace("Challenge", "Chall");
+                let icon = (x.score >= (x.total||30)) ? '🎉' : '';
                 let initial = x.pseudo.charAt(0).toUpperCase();
-                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-4 h-4 rounded-full bg-indigo-600 flex items-center justify-center text-[7px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300 font-bold text-[10px]">${i+1}. ${x.pseudo}</span><span class="text-yellow-400 font-bold ml-1 text-[10px]">${x.score} pts ${icon}</span></div></div>`;
+                d.innerHTML = `<div class="flex items-center gap-1 min-w-0 w-full"><div class="w-3 h-3 rounded-full bg-indigo-600 flex items-center justify-center text-[6px] font-bold text-white shrink-0">${initial}</div><div class="flex-1 min-w-0 flex justify-between"><span class="truncate text-gray-300">${x.pseudo} <span class="text-slate-500">• ${mode}</span></span><span class="${icon?'text-green-400':'text-yellow-500'} font-bold ml-1 flex items-center">${x.score} <span class="text-[8px] ml-0.5">${icon}</span></span></div></div>`;
                 c.appendChild(d); 
             }); 
         }
@@ -345,7 +345,26 @@
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'));
             const snap = await getDocs(q);
             allPedagoEvents = [];
-            snap.forEach(d => allPedagoEvents.push(d.data()));
+            snap.forEach(d => {
+                const data = d.data();
+                allPedagoEvents.push({...data, id: d.id});
+            });
+        }
+        
+        async function resolvePedagoEvent(intervalName) {
+            if(!db || !currentUserPseudo) return;
+            const eventsToDelete = allPedagoEvents.filter(e => 
+                e.pseudo === currentUserPseudo && 
+                (e.detail.includes(intervalName) || e.detail.includes(`Cherchait ${intervalName}`))
+            );
+            
+            for(const ev of eventsToDelete) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pedago_events', ev.id));
+                    allPedagoEvents = allPedagoEvents.filter(x => x.id !== ev.id);
+                } catch(e) {}
+            }
+            if(currentStatsTab === 'pedago') updateStatsView();
         }
 
         safeListener('toggle-sidebar-btn', 'click', ()=>{ const s=el('app-sidebar'); if(window.innerWidth<1024) { s.style.display = s.style.display==='block'?'none':'block'; } }); 
@@ -356,64 +375,18 @@
         safeListener('validate-pin-btn', 'click', async ()=>{ if(await checkPin(el('pin-input').value)) { hide('pin-modal'); show('admin-modal'); switchAdminTab('users'); } else { el('pin-input').value=''; } });
         safeListener('cancel-pin-btn', 'click', ()=>hide('pin-modal')); safeListener('close-admin-btn', 'click', ()=>hide('admin-modal'));
         safeListener('tab-users-btn', 'click', ()=>switchAdminTab('users')); safeListener('tab-sessions-btn', 'click', ()=>switchAdminTab('sessions')); safeListener('tab-errors-btn', 'click', ()=>switchAdminTab('errors')); safeListener('refresh-sessions-btn', 'click', renderAdminSessions); safeListener('refresh-errors-btn', 'click', renderAdminErrors);
-        
         function switchAdminTab(t) { 
             hide('admin-users-view'); hide('admin-sessions-view'); hide('admin-errors-view');
             el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
             el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
             el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-white border-b-2 border-transparent';
-            
             if(t==='users'){ show('admin-users-view'); el('tab-users-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminUsers(); } 
             else if(t==='sessions') { show('admin-sessions-view'); el('tab-sessions-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminSessions(); }
             else { show('admin-errors-view'); el('tab-errors-btn').className = 'flex-1 py-2 text-[10px] font-bold text-white border-b-2 border-sky-500'; renderAdminErrors(); }
         }
-        
         function renderAdminUsers() { const c=el('admin-users-list'); c.innerHTML=''; existingUsers.forEach(u => { const d=document.createElement('div'); d.className='flex justify-between bg-slate-800 p-2 mb-1 rounded text-[10px]'; d.innerHTML=`<span>${u.pseudo}</span><button class="text-red-500 font-bold del-usr-btn">X</button>`; d.querySelector('.del-usr-btn').onclick=()=>promptDelete('user', u.id, u.pseudo); c.appendChild(d); }); }
-        
-        async function renderAdminSessions() { 
-            const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; 
-            const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); 
-            b.innerHTML=''; 
-            l.forEach(x=>{ 
-                const r=document.createElement('tr'); 
-                const dateObj = new Date(x.timestamp);
-                r.innerHTML=`<td><div class="flex flex-col leading-tight"><span>${dateObj.toLocaleDateString('fr-FR')}</span><span class="text-slate-500 text-[9px]">${dateObj.toLocaleTimeString('fr-FR')}</span></div></td><td class="font-bold text-white">${x.pseudo}</td><td class="text-sky-400 text-[10px]">${x.mode}</td><td class="font-mono font-bold text-yellow-400">${x.score}/${x.total||'?'}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; 
-                r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Score ${x.score} (${x.pseudo})`); 
-                b.appendChild(r); 
-            }); 
-        }
-
-        async function renderAdminErrors() {
-            const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return;
-            const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100)));
-            b.innerHTML='';
-            s.forEach(doc => {
-                const x = doc.data();
-                const r=document.createElement('tr');
-                const color = x.type === 'error' ? 'text-red-400' : 'text-yellow-400';
-                r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${color} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td>`;
-                b.appendChild(r);
-            });
-        }
-        
-        async function logPedagoEvent(type, detail, time) {
-            if(!db || !currentUserPseudo) return;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), {
-                    pseudo: currentUserPseudo,
-                    type: type, // 'error' or 'slow'
-                    detail: detail,
-                    time: time.toFixed(1),
-                    timestamp: Date.now()
-                });
-                // Refresh local data if needed? No need, admin does fetch
-                allPedagoEvents.push({pseudo: currentUserPseudo, type, detail, time, timestamp: Date.now()});
-                // If user is on pedago tab, refresh?
-                if(currentStatsTab === 'pedago') updateStatsView();
-            } catch(e) {}
-        }
-        // Expose for game
-        window.logPedagoEvent = logPedagoEvent;
+        async function renderAdminSessions() { const b=el('admin-sessions-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','scores'))); const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); l.sort((a,b)=>b.timestamp-a.timestamp); b.innerHTML=''; l.forEach(x=>{ const r=document.createElement('tr'); r.innerHTML=`<td>${new Date(x.timestamp).toLocaleDateString()}</td><td>${x.pseudo}</td><td>${x.mode.substring(0,8)}</td><td>${x.score}</td><td class="text-right"><button class="text-red-500 font-bold">X</button></td>`; r.querySelector('button').onclick=()=>promptDelete('score', x.id, `Sc ${x.score}`); b.appendChild(r); }); }
+        async function renderAdminErrors() { const b=el('admin-errors-tbody'); b.innerHTML='...'; if(!db)return; const s=await getDocs(query(collection(db,'artifacts',appId,'public','data','pedago_events'), orderBy('timestamp', 'desc'), limit(100))); b.innerHTML=''; s.forEach(doc => { const x = doc.data(); const r=document.createElement('tr'); r.innerHTML=`<td class="font-bold text-white">${x.pseudo}</td><td class="${x.type === 'error' ? 'text-red-400' : 'text-yellow-400'} font-bold">${x.type === 'error' ? 'Erreur' : 'Lent'}</td><td class="text-slate-300">${x.detail}</td><td class="font-mono">${x.time}s</td>`; b.appendChild(r); }); }
 
         function promptDelete(t, id, n) { itemToDelete={t,id}; el('delete-message').textContent=n; show('confirm-delete-modal'); }
         safeListener('cancel-delete-btn', 'click', ()=>hide('confirm-delete-modal'));
@@ -423,8 +396,90 @@
 
         window.saveScoreToFirebase = async (s, m, t) => { if(!db||!currentUserPseudo)return; try{ await addDoc(collection(db,'artifacts',appId,'public','data','scores'), {pseudo:currentUserPseudo, score:s, total:t, mode:m, timestamp:Date.now()}); if(m.startsWith("Niveau") && s>=30){ const ma = m.match(/Niveau (\d+)/); if(ma) levelProgressMap[parseInt(ma[1])] = (levelProgressMap[parseInt(ma[1])]||0)+1; } }catch(e){} };
         window.getLevelProgress = () => levelProgressMap;
+        
+        async function logPedagoEvent(type, detail, time, context) {
+            if(!db || !currentUserPseudo) return;
+            try {
+                const eventData = {
+                    pseudo: currentUserPseudo, type: type, detail: detail, time: time.toFixed(1),
+                    timestamp: Date.now(), context: context || null
+                };
+                const ref = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pedago_events'), eventData);
+                allPedagoEvents.push({...eventData, id: ref.id});
+                if(currentStatsTab === 'pedago') updateStatsView();
+            } catch(e) {}
+        }
+        window.logPedagoEvent = logPedagoEvent;
+        
+        function initPedagoFretboard() {
+            const container = el('pedago-neck');
+            if(!container || container.children.length > 0) return;
+            const n=document.createElement('div'); n.className='fretboard relative flex flex-col-reverse p-1 rounded shadow-inner select-none'; 
+            // Remove scaling, use responsive sizing or fit to container
+            n.style.width = "100%"; 
+            const NUM_STRINGS=6, NUM_FRETS=15;
+            for(let i=0;i<NUM_STRINGS;i++){ 
+                const s=document.createElement('div'); s.className='string-container relative flex items-center h-4'; s.dataset.stringId=i; // Reduced height
+                const l=document.createElement('div'); l.className='string absolute left-0 right-0 z-10 rounded-full'; l.style.height=`${((NUM_STRINGS-1-i)*0.3)+1}px`; s.appendChild(l); 
+                for(let j=0;j<NUM_FRETS+1;j++){ 
+                    const fw=document.createElement('div'); fw.className='fret-wrapper relative flex-1 h-full flex justify-center items-center border-r border-transparent flex-shrink-0 clickable-fret'; 
+                    if(j===0){const nut=document.createElement('div'); nut.className='fret-nut absolute right-0 top-0 bottom-0 w-2 z-20'; fw.appendChild(nut);} 
+                    else {const fl=document.createElement('div'); fl.className='fret-line absolute right-0 top-0 bottom-0 z-10'; fw.appendChild(fl);} 
+                    const a=document.createElement('div'); a.className='absolute inset-0 z-50 clickable-area'; a.dataset.string=i; a.dataset.fret=j; 
+                    // Interactive Click on visualization neck
+                    a.onclick = () => {
+                        if(typeof Tone !== 'undefined' && Tone.Transport.state !== 'started') Tone.start();
+                        const synth = new Tone.PolySynth(Tone.AMSynth).toDestination();
+                        synth.volume.value = -5;
+                        const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+                        const TUNING=[40,45,50,55,59,64]; 
+                        const val = TUNING[i] + j;
+                        const note = NOTES_SHARP[val%12] + Math.floor(val/12);
+                        synth.triggerAttackRelease(note, "8n");
+                        
+                        const dot = document.createElement('div');
+                        dot.className = 'note-dot w-4 h-4 bg-sky-400 rounded-full absolute z-30 opacity-80 pointer-events-none';
+                        a.parentElement.appendChild(dot);
+                        setTimeout(() => dot.remove(), 500);
+                    };
+                    fw.appendChild(a); s.appendChild(fw); 
+                } n.appendChild(s); 
+            } 
+            container.appendChild(n);
+            // Markers
+            [3,5,7,9,15].forEach(f=>{const c=n.children[2].children[f+1]; if(c)c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0'}),c.firstChild);}); 
+            const cG=n.children[3].children[13], cD=n.children[2].children[13]; if(cG&&cD)[cG,cD].forEach(c=>c.insertBefore(Object.assign(document.createElement('div'),{className:'absolute w-2 h-2 rounded-full bg-black/40 z-0'}),c.firstChild));
+        }
 
-        // STATS TABS
+        function visualizeErrorOnNeck(context) {
+            const container = el('pedago-neck').querySelector('.fretboard');
+            if(!container || !context) return;
+            container.querySelectorAll('.note-dot').forEach(d=>d.remove());
+            
+            const place = (n, color) => {
+                if(!n) return;
+                const sIdx = n.string; const fIdx = n.fret;
+                const stringRow = container.children[sIdx]; 
+                if(stringRow) {
+                    const cell = stringRow.children[fIdx+1]; 
+                    if(cell) {
+                        const div=document.createElement('div'); 
+                        div.className=`note-dot w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] ${color} text-white absolute z-30 pointer-events-none`; 
+                        cell.appendChild(div);
+                    }
+                }
+            };
+            
+            if(context.root) place(context.root, 'bg-sky-500');
+            if(context.target) place(context.target, 'bg-emerald-500');
+            if(context.clicked) place(context.clicked, 'bg-red-500');
+            
+            if(context.root) {
+                const scrollX = (context.root.fret * 40) - 100;
+                el('pedago-neck').scrollTo({left:scrollX, behavior:'smooth'});
+            }
+        }
+
         document.querySelectorAll('.stat-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
                 document.querySelectorAll('.stat-tab').forEach(t => t.classList.remove('active'));
@@ -442,6 +497,9 @@
             const btn = el('open-challenge-btn');
             if(unlocked) { btn.className = 'flex-1 group w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:to-indigo-600 text-white p-4 rounded-xl shadow-lg border border-white/10 transition-all relative overflow-hidden cursor-pointer text-left flex justify-between items-center'; btn.innerHTML = `<div><div class="text-lg font-black italic">MODE CHALLENGE</div><div class="text-[9px] text-blue-200 font-medium mt-1">Testez vos limites</div></div><span class="text-3xl drop-shadow-md">🏆</span>`; btn.onclick = ()=>{ hide('main-menu'); show('challenge-selection-menu'); }; }
             else { btn.onclick=null; }
+            
+            // Init pedago board immediately
+            initPedagoFretboard();
             updateStatsView();
         }
 
@@ -494,21 +552,25 @@
         function processPedagoUserView() {
             const tbody = el('pedago-body');
             tbody.innerHTML = '';
-            // Filter for current user
-            const userEvents = allPedagoEvents.filter(e => e.pseudo === currentUserPseudo).sort((a,b) => b.timestamp - a.timestamp).slice(0, 20);
+            const userEvents = allPedagoEvents.filter(e => e.pseudo === currentUserPseudo).sort((a,b) => b.timestamp - a.timestamp).slice(0, 50);
             
             if(userEvents.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 italic p-2">Aucune difficulté enregistrée. Bravo !</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 italic p-2">Aucune difficulté enregistrée.</td></tr>';
                 return;
             }
             
             userEvents.forEach(x => {
                 const tr = document.createElement('tr');
+                tr.className = 'error-row hover:bg-white/5 cursor-pointer transition-colors';
+                tr.onclick = () => visualizeErrorOnNeck(x.context);
                 const color = x.type === 'error' ? 'text-red-400' : 'text-yellow-400';
                 const icon = x.type === 'error' ? '❌' : '🐢';
                 tr.innerHTML=`<td class="${color} font-bold p-1 border-b border-slate-800">${icon}</td><td class="text-slate-300 p-1 border-b border-slate-800 truncate max-w-[100px]" title="${x.detail}">${x.detail}</td><td class="font-mono text-right p-1 border-b border-slate-800">${x.time}s</td>`;
                 tbody.appendChild(tr);
             });
+            
+            // Auto-visualize first one
+            if(userEvents[0].context) visualizeErrorOnNeck(userEvents[0].context);
         }
 
         function processLeaderboard() {
@@ -658,11 +720,17 @@
                 if(diff === expectedDiff) {
                     placeNote({string:s, fret:f}, 'T'); el('feedback-message').innerHTML = `<span class="text-green-400">Bravo !</span>`;
                     score++; updateScore();
-                    if(timeTaken > 10) window.logPedagoEvent('slow', `${finderTarget.name} en ${timeTaken.toFixed(1)}s`, timeTaken);
+                    
+                    if(timeTaken < 10) {
+                        resolvePedagoEvent(finderTarget.name);
+                    } else {
+                         window.logPedagoEvent('slow', `${finderTarget.name} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:{string:s, fret:f}});
+                    }
+
                     el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
                 } else {
                     placeNote({string:s, fret:f}, 'X'); el('feedback-message').innerHTML = `<span class="text-red-400">Non, réessaie</span>`;
-                    window.logPedagoEvent('error', `Cherchait ${finderTarget.name}`, timeTaken);
+                    window.logPedagoEvent('error', `Cherchait ${finderTarget.name}`, timeTaken, {root:rootNote, clicked:{string:s, fret:f}});
                     lives--; updateLives(); if(lives <= 0) setTimeout(() => endGame(false), 1000);
                 }
             };
@@ -695,12 +763,18 @@
 
                 if(ok){ 
                     el('feedback-message').innerHTML=`<span class="text-emerald-400">Bravo !</span>`; score++; 
-                    if(timeTaken > 10) window.logPedagoEvent('slow', `Trouver ${correctInterval} en ${timeTaken.toFixed(1)}s`, timeTaken);
+                    
+                    if(timeTaken < 10) {
+                        resolvePedagoEvent(sel); 
+                    } else {
+                        window.logPedagoEvent('slow', `Trouver ${correctInterval} en ${timeTaken.toFixed(1)}s`, timeTaken, {root:rootNote, target:targetNote});
+                    }
+
                     if(currentMode==='challenge'){ updateScore(); if(score>=currentChallenge.goal) setTimeout(()=>endGame(true),1000); }
                     else { updateProg(score); if(score>=30) setTimeout(()=>{ if(window.saveScoreToFirebase)window.saveScoreToFirebase(30,el('app-title').textContent,30); endGame(true); },1000); }
                 } else {
                     el('feedback-message').innerHTML=`<span class="text-red-400">${correctInterval}</span>`; 
-                    window.logPedagoEvent('error', `Voulait ${correctInterval}, a cliqué ${sel}`, timeTaken);
+                    window.logPedagoEvent('error', `Voulait ${correctInterval}, a cliqué ${sel}`, timeTaken, {root:rootNote, target:targetNote}); 
                     lives--; updateLives(); if(lives<=0) setTimeout(()=>endGame(false),1000);
                 }
                 el('new-question-btn').classList.remove('btn-disabled'); el('new-question-btn').classList.add('btn-highlight');
